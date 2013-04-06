@@ -1,0 +1,368 @@
+
+=head1 NAME
+
+DBIx::ThinSQL - SQL database interface for Perl
+
+=head1 VERSION
+
+0.0.1 Development release.
+
+=head1 SYNOPSIS
+
+    use DBIx::ThinSQL;
+
+    my $db = DBIx::ThinSQL->connect( 'dbi:...', 'username', 'password' );
+
+    # The very simple stuff
+
+    my $success = $db->insert(
+        into   => 'actors',
+        values => { id => 1, name => 'John Smith' },
+    );
+
+    my $count = $db->update(
+        'actors',
+        set   => { name => 'Jack Smith' },
+        where => { id   => 1, name => 'John Smith' },
+    );
+
+    my $count = $db->delete(
+        from  => 'actors',
+        where => { actor_id => 1, last_name => 'Jones' },
+    );
+
+    my $row = $db->select(
+        [ 'id', 'name' ],
+        from  => 'actors',
+        where => { id => 1 },
+    );
+
+    print $row->id . ':' . $row->name . "\n";
+
+
+    # The do-any-SQL-you-want stuff
+
+    my $people = $db->irow('people');
+
+    $db->do(
+        insert_into => $people->( 'id', 'name' );
+          sql_values( 1, 'A Name' ),
+    );
+
+    # Anyone celebrating a birthday today gets a raise, with the
+    # calculation done inside the database.
+
+    my $people = $db->urow('people');
+
+    $db->do(
+        update => $people,
+        set    => $people->salary( $people->salary * 2 ),
+        where  => $people->dob == $today,
+    );
+
+    my $purchases = $db->srow('purchases');
+
+    my $row = $db->fetch1(
+        select    => [ $people->name, $ps->pid ],
+        from      => $people,
+        left_join => $purchases,
+        on        => $purchases->id == $people->id,
+        where => $people->id->in( 1, 2, 3 ) 
+          . AND
+          . $people->name->like('%paul%'),
+        limit  => 1,
+        offset => 1,
+    );
+
+    # then do stuff with $row->pid, $row->name etc
+
+    my @rows = $db->fetch(
+        select => [ sql_coalesce( $p->pid, $p->cid )->as('pcid') ],
+        from   => $p,
+        where  => $p->cid->is_not_null,
+    );
+
+    # coalesce column is available as $row->pcid
+
+    my $iter = $db->iter( @query ... );
+    while ( my $row = $iter->next ) {
+        print $row->col(), $row->some_other_column;
+    }
+
+    # If you want the data your own way you can still use the query
+    # syntax:
+    my $sth = $db->sth(@query);
+    map { print join( ',', @$_ ) . "\n" } $sth->fetchall_arrayref;
+
+    # Transactions provided by DBIx::Connector
+    $db->txn(
+        sub {
+
+            # multiple statements
+        }
+    );
+
+
+=head1 DESCRIPTION
+
+B<DBIx::ThinSQL> is an extension to the Perl Database Interface (L<DBI>).  It
+is designed for complicated queries and efficient access to results.
+With an API that lets you easily write almost-raw SQL, DBIx::ThinSQL gives
+you unfettered access to the power and flexibility of your underlying
+database. It aims to be a tool for programmers who want their databases
+to work just as hard as their Perl scripts.
+
+DBIx::ThinSQL gives you access to aggregate expressions, joins, nested
+selects, unions and database-side operator invocations. Transactional
+support is provided via L<DBIx::Connector>.  Security conscious coders
+will be pleased to know that all user-supplied values are bound
+properly using L<DBI> "bind_param()".  Binding binary data is handled
+transparently across different database types.
+
+DBIx::ThinSQL offers a couple of very simple Create, Retrieve, Update and
+Delete (CRUD) action methods.  These are designed to get you up and
+running quickly when your query data is already inside a hash. The
+methods are abstractions of the real API, but should still read as much
+as possible like SQL.
+
+Although rows can be retrieved from the database as simple objects,
+DBIx::ThinSQL does not attempt to be an Object-Relational-Mapper (ORM). There
+are no auto-inflating columns or automatic joins and the code size and
+speed reflect the lack of complexity.
+
+DBIx::ThinSQL uses the light-weight L<Log::Any> for logging.
+
+=head1 CONSTRUCTOR
+
+Works like a normal DBI. Can be used with things like
+L<DBIx::Connector> to get nice transaction support.
+
+=head1 DBH METHODS
+
+=over
+
+=item xprepare
+
+Does a prepare but knows about bind values and quoted values.
+
+=item xarray
+
+Does a prepare but knows about bind values and quoted values.
+
+=item xarrays
+
+Does a prepare but knows about bind values and quoted values.
+
+=item xhash
+
+Does a prepare but knows about bind values and quoted values.
+
+=item xhashes
+
+Does a prepare but knows about bind values and quoted values.
+
+=item insert(into => $table, values => \%val) -> Int
+
+Insert a row into the database and return the number of rows affected.
+
+=item update($table, set => \%values, where => \%expr) -> Int
+
+Update rows in the database and return the number of rows affected.
+
+This method is retricted to the wholesale replacement of column values
+(no database-side calculations etc).  Multiple WHERE key/values are
+only 'AND'd together. An 'undef' value maps to SQL's NULL value.
+
+=item delete(from => $table, where => \%expr) -> Int
+
+Delete rows from the database and return the number of rows affected.
+
+=item select(\@columns, from => $table, where => \%expr) -> @Obj
+
+Retrieve rows from the database as a list of objects in array context,
+or a single object in scalar context. These objects (blessed into a
+dynamically created class) have an accessor method for each column.
+
+The first argument to the select() method must be either an array
+reference of column names, or a single '*'. If the array reference is
+given only the columns specified will be retrieved from the database.
+
+=back
+
+=head1 STH METHODS
+
+=over
+
+=item array -> ARRAYREF
+
+Insert a row into the database and return the number of rows affected.
+
+=item arrays -> ARRAYREF
+
+=item arrays -> LIST
+
+Update rows in the database and return the number of rows affected.
+This method is retricted to the wholesale replacement of column values
+(no database-side calculations etc).  Multiple WHERE key/values are
+only 'AND'd together. An 'undef' value maps to SQL's NULL value.
+
+=item hash -> HASHREF
+
+Delete rows from the database and return the number of rows affected.
+
+=item hashes -> ARRAYREF[HASHREF]
+
+=item hashes -> LIST
+
+Delete rows from the database and return the number of rows affected.
+
+=back
+
+=head1 CLASS FUNCTIONS
+
+The following functions can be exported individually or all at once
+using the ':all' tag.  They all return an object which can be combined
+with or used inside other functions.
+
+=over 4
+
+=item bv( $value, [ $bind_type ] ) -> L<DBIx::ThinSQL::BindValue>
+
+This function returns an object which tells DBIx::ThinSQL to bind $value
+using a placeholder. The optional $bind_type is a database type
+(integer, varchar, timestamp, bytea, etc) which will be converted to
+the appropriate bind constant during a prepare() or prepare_cached()
+call.
+
+=item qv( $value )
+
+=item AND
+
+=item OR
+
+=item sql_and( @args ) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "$arg1 AND $arg2 AND ...".
+
+=item sql_case( @stmts ) -> L<DBIx::ThinSQL::Expr>
+
+Wraps @stmts inside a CASE/END pair while converting arguments to
+expressions where needed.
+
+    sql_case(
+        when => $actors->name->is_null,
+        then => 'No Name',
+        else => $actors->name,
+    )->as('name')
+
+    # CASE WHEN actors0.name IS NULL
+    # THEN ? ELSE actors0.name END AS name
+
+=item sql_coalesce(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "COALESCE($arg1, $arg2, ...)".
+
+=item sql_cast($arg1, as => $arg2) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "CAST( $arg1 AS $arg2 )".
+
+=item sql_concat(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "$arg1 || $arg2 || ...".
+
+=item sql_count(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "COUNT($arg1, $arg2, ...)".
+
+=item sql_exists(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "EXISTS(@args)".
+
+=item sql_func('myfunc', @args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "MYFUNC($arg1, $arg2, ...)".
+
+=item sql_hex(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "HEX($arg1, $arg2, ...)".
+
+=item sql_length(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "LENGTH(@args)".
+
+=item sql_lower(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "LOWER(@args)".
+
+=item sql_ltrim(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "LTRIM(@args)".
+
+=item sql_max(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "MAX(@args)".
+
+=item sql_min(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "MIN(@args)".
+
+=item sql_rtrim(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "RTRIM(@args)".
+
+=item sql_sum(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "MIN(@args)".
+
+=item sql_or(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "$arg1 OR $arg2 OR ...".
+
+=item sql_replace(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "REPLACE($arg1,$arg2 [,$arg3])".
+
+=item sql_substr(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "SUBSTR($arg1, $arg2, ...)".
+
+=item sql_table($name, @columns) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "name(col1,col2,...)".
+
+=item sql_upper(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "UPPER(@args)".
+
+=item sql_values(@args) -> L<DBIx::ThinSQL::Expr>
+
+Maps to "VALUES($arg1, $arg2, ...)".
+
+=back
+
+=head1 SEE ALSO
+
+L<Log::Any>
+
+=head1 DEVELOPMENT & SUPPORT
+
+DBIx::ThinSQL is managed via Github:
+
+    https://github.com/mlawren/p5-DBIx-ThinSQL/tree/devel
+
+DBIx::ThinSQL follows a semantic versioning scheme:
+
+    http://semver.org
+
+=head1 AUTHOR
+
+Mark Lawrence E<lt>nomad@null.netE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2013 Mark Lawrence <nomad@null.net>
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 3 of the License, or (at your
+option) any later version.
