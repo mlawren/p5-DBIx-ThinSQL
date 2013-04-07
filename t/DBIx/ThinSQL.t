@@ -61,28 +61,31 @@ subtest "DBIx::ThinSQL", sub {
     # now let's make a database check our syntax
     run_in_tempdir {
 
-        # the apparently DBI experimetal stuff
-        my $SQLite = eval { require DBD::SQLite };
-        my $db = DBI->connect(
-            ( $SQLite ? 'dbi:SQLite:dbname=x.sqlite' : 'dbi:DBM:' ),
-            '', '',
-            {
-                RaiseError => 1,
-                PrintError => 0,
-                RootClass  => 'DBIx::ThinSQL',
-            },
-        );
+        my $driver = eval { require DBD::SQLite } ? 'SQLite' : 'DBM';
+
+        # DBD::DBM doesn't seem to support this style of construction
+      SKIP: {
+            skip 'DBD::DBM limitation', 1 if $driver eq 'DBM';
+
+            my $db = DBI->connect(
+                "dbi:$driver:dbname=x",
+                '', '',
+                {
+                    RaiseError => 1,
+                    PrintError => 0,
+                    RootClass  => 'DBIx::ThinSQL',
+                },
+            );
+
+            isa_ok $db, 'DBIx::ThinSQL::db';
+        }
+
+        my $db =
+          DBIx::ThinSQL->connect( "dbi:$driver:dbname=x'", '', '',
+            { RaiseError => 1, PrintError => 0, },
+          );
 
         isa_ok $db, 'DBIx::ThinSQL::db';
-
-        $db = DBIx::ThinSQL->connect(
-            ( $SQLite ? 'dbi:SQLite:dbname=x.sqlite' : 'dbi:DBM:' ),
-            '', '', { RaiseError => 1, PrintError => 0, },
-        );
-
-        isa_ok $db, 'DBIx::ThinSQL::db';
-
-        my $driver = $db->{Driver}->{Name};
 
         $db->do("CREATE TABLE users ( name TEXT, phone TEXT )");
         my $res;
