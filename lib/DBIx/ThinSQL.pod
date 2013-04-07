@@ -1,116 +1,91 @@
 
 =head1 NAME
 
-DBIx::ThinSQL - SQL database interface for Perl
+DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.1 Development release.
+0.0.1 (yyyy-mm-dd) development release.
 
 =head1 SYNOPSIS
 
-    use DBIx::ThinSQL;
+    use strict;
+    use warnings;
+    use DBIx::ThinSQL qw/ bv qv /;
 
-    my $db = DBIx::ThinSQL->connect( 'dbi:...', 'username', 'password' );
-
-    # The very simple stuff
-
-    my $success = $db->insert(
-        into   => 'actors',
-        values => { id => 1, name => 'John Smith' },
+    my $db = DBIx::ThinSQL->connect(
+        'dbi:Driver:...'
+        'username',
+        'password',
     );
 
-    my $count = $db->update(
-        'actors',
-        set   => { name => 'Jack Smith' },
-        where => { id   => 1, name => 'John Smith' },
+    # Some basic CrUD statements to show the simple stuff first. Note
+    # the inline binding of data that you normally have to call
+    # $dbh->bind_param() on.
+
+    my $success = $db->xdo(
+        insert_into => 'actors',
+        values      => {
+            id    => 1,
+            name  => 'John Smith',
+            photo => bv( $image, DBI::SQL_BLOB ),
+        },
     );
 
-    my $count = $db->delete(
-        from  => 'actors',
-        where => { actor_id => 1, last_name => 'Jones' },
+    # A "where" with a HASHref "AND"s the elements together
+
+    my $count = $db->xdo(
+        update => 'actors',
+        set    => { name => 'Jack Smith' },
+        where  => { id => 1, name => 'John Smith' },
     );
 
-    my $row = $db->select(
-        [ 'id', 'name' ],
-        from  => 'actors',
-        where => { id => 1 },
+    # A "where" with an ARRAYref concatenates items together. Note the
+    # string that is quoted according to the database type.
+
+    my $count = $db->xdo(
+        delete_from => 'actors',
+        where       => [
+            'actor_id = 1', ' OR ',
+            'last_name != ', qv("Jones", DBI::SQL_VARCHAR ),
+        ],
     );
 
-    print $row->id . ':' . $row->name . "\n";
+    # Methods for reading from the database depend on the type of
+    # structure you want back: array or hash references.
 
-
-    # The do-any-SQL-you-want stuff
-
-    my $people = $db->irow('people');
-
-    $db->do(
-        insert_into => $people->( 'id', 'name' );
-          sql_values( 1, 'A Name' ),
-    );
-
-    # Anyone celebrating a birthday today gets a raise, with the
-    # calculation done inside the database.
-
-    my $people = $db->urow('people');
-
-    $db->do(
-        update => $people,
-        set    => $people->salary( $people->salary * 2 ),
-        where  => $people->dob == $today,
-    );
-
-    my $purchases = $db->srow('purchases');
-
-    my $row = $db->fetch1(
-        select    => [ $people->name, $ps->pid ],
-        from      => $people,
-        left_join => $purchases,
-        on        => $purchases->id == $people->id,
-        where => $people->id->in( 1, 2, 3 ) 
-          . AND
-          . $people->name->like('%paul%'),
+    my $ref = $db->xhash(
+        select => [ 'id', 'name', qv("Some string") ],
+        from   => 'actors',
+        where  => [
+            'id = ', qv( 1, DBI::SQL_INTEGER ),
+            ' AND photo IS NOT NULL',
+        ],
         limit  => 1,
-        offset => 1,
     );
 
-    # then do stuff with $row->pid, $row->name etc
-
-    my @rows = $db->fetch(
-        select => [ sql_coalesce( $p->pid, $p->cid )->as('pcid') ],
-        from   => $p,
-        where  => $p->cid->is_not_null,
-    );
-
-    # coalesce column is available as $row->pcid
-
-    my $iter = $db->iter( @query ... );
-    while ( my $row = $iter->next ) {
-        print $row->col(), $row->some_other_column;
-    }
-
-    # If you want the data your own way you can still use the query
-    # syntax:
-    my $sth = $db->sth(@query);
-    map { print join( ',', @$_ ) . "\n" } $sth->fetchall_arrayref;
-
-    # Transactions provided by DBIx::Connector
-    $db->txn(
-        sub {
-
-            # multiple statements
-        }
+    $db->xdo(
+        insert_into => [ 'table', 'col1', 'col2', 'col3' ],
+        select => [ 't1.col3', 't3.col4', bv( 'value', DBI::SQL_VARCHAR ) ],
+        from   => 'table AS t1',
+        inner_join => 'other_table AS t2',
+        on         => 't1.something = t2.else',
+        left_join  => 'third_table AS t3',
+        on    => [ 't3.dont = t1.care AND t1.fob = ', qv( 1, DBI::SQL_INT ) ],
+        where => [],
+        order_by => [ 't3.dont', 't1.col4' ],
+        limit    => 2,
     );
 
 
 =head1 DESCRIPTION
 
-B<DBIx::ThinSQL> is an extension to the Perl Database Interface (L<DBI>).  It
-is designed for complicated queries and efficient access to results.
-With an API that lets you easily write almost-raw SQL, DBIx::ThinSQL gives
-you unfettered access to the power and flexibility of your underlying
-database. It aims to be a tool for programmers who want their databases
-to work just as hard as their Perl scripts.
+B<DBIx::ThinSQL> is an extension to the Perl Database Interface
+(L<DBI>).  It is designed for complicated queries and efficient access
+to results.  With an API that lets you easily write almost-raw SQL,
+DBIx::ThinSQL gives you unfettered access to the power and flexibility
+of your underlying database. It aims to be a tool for programmers who
+want their databases to work just as hard as their Perl scripts.
 
 DBIx::ThinSQL gives you access to aggregate expressions, joins, nested
 selects, unions and database-side operator invocations. Transactional
@@ -119,16 +94,16 @@ will be pleased to know that all user-supplied values are bound
 properly using L<DBI> "bind_param()".  Binding binary data is handled
 transparently across different database types.
 
-DBIx::ThinSQL offers a couple of very simple Create, Retrieve, Update and
-Delete (CRUD) action methods.  These are designed to get you up and
+DBIx::ThinSQL offers a couple of very simple Create, Retrieve, Update
+and Delete (CRUD) action methods.  These are designed to get you up and
 running quickly when your query data is already inside a hash. The
 methods are abstractions of the real API, but should still read as much
 as possible like SQL.
 
 Although rows can be retrieved from the database as simple objects,
-DBIx::ThinSQL does not attempt to be an Object-Relational-Mapper (ORM). There
-are no auto-inflating columns or automatic joins and the code size and
-speed reflect the lack of complexity.
+DBIx::ThinSQL does not attempt to be an Object-Relational-Mapper (ORM).
+There are no auto-inflating columns or automatic joins and the code
+size and speed reflect the lack of complexity.
 
 DBIx::ThinSQL uses the light-weight L<Log::Any> for logging.
 
@@ -228,8 +203,8 @@ with or used inside other functions.
 
 =item bv( $value, [ $bind_type ] ) -> L<DBIx::ThinSQL::BindValue>
 
-This function returns an object which tells DBIx::ThinSQL to bind $value
-using a placeholder. The optional $bind_type is a database type
+This function returns an object which tells DBIx::ThinSQL to bind
+$value using a placeholder. The optional $bind_type is a database type
 (integer, varchar, timestamp, bytea, etc) which will be converted to
 the appropriate bind constant during a prepare() or prepare_cached()
 call.
@@ -366,3 +341,4 @@ This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
 Free Software Foundation; either version 3 of the License, or (at your
 option) any later version.
+
