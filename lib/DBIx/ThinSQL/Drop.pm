@@ -1,6 +1,4 @@
 package DBIx::ThinSQL::Drop;
-package    # hide this monkey patching
-  DBIx::ThinSQL::db;
 use strict;
 use warnings;
 use File::ShareDir qw/dist_dir/;
@@ -21,6 +19,11 @@ sub drop_everything {
         Carp::croak "Drop for driver $driver is unsupported.";
     }
     return $self->run_dir($dir);
+}
+
+{
+    no strict 'refs';
+    *{'DBIx::ThinSQL::db::drop_everything'} = \&drop_everything;
 }
 
 1;

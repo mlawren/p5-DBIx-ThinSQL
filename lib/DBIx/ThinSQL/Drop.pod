@@ -22,10 +22,10 @@ DBIx::ThinSQL::Drop - Clean database support for DBIx::ThinSQL
 
 =head1 DESCRIPTION
 
-B<DBIx::ThinSQL::Drop> adds support to L<DBIx::ThinSQL> for cleaning out your
-database. This is mostly useful when running L<DBIx::ThinSQL> related tests
-with something like L<Test::Database> where you don't know who was
-doing what with your test database.
+B<DBIx::ThinSQL::Drop> adds support to L<DBIx::ThinSQL> for cleaning
+out your database. This is mostly useful when running L<DBIx::ThinSQL>
+related tests with something like L<Test::Database> where you don't
+know who was doing what with your test database.
 
 This module currently only works with SQLite and PostgreSQL databases.
 
@@ -33,7 +33,7 @@ This module currently only works with SQLite and PostgreSQL databases.
 
 =over 4
 
-=item _clean_database
+=item drop_everything
 
 B<*WARNING*> This method EATS YOUR DATA! B<*WARNING*>
 

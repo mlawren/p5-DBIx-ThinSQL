@@ -1,6 +1,4 @@
 package DBIx::ThinSQL::Deploy;
-package    # hide this monkey patching
-  DBIx::ThinSQL::db;
 use strict;
 use warnings;
 use Log::Any qw/$log/;
@@ -307,6 +305,21 @@ sub deployed_table_info {
     }
 
     return \%tables;
+}
+
+{
+    no strict 'refs';
+    *{'DBIx::ThinSQL::db::last_deploy_id'}      = \&last_deploy_id;
+    *{'DBIx::ThinSQL::db::_load_file'}          = \&_load_file;
+    *{'DBIx::ThinSQL::db::_run_cmds'}           = \&_run_cmds;
+    *{'DBIx::ThinSQL::db::run_file'}            = \&run_file;
+    *{'DBIx::ThinSQL::db::run_dir'}             = \&run_dir;
+    *{'DBIx::ThinSQL::db::_setup_deploy'}       = \&_setup_deploy;
+    *{'DBIx::ThinSQL::db::deploy'}              = \&deploy;
+    *{'DBIx::ThinSQL::db::_deploy'}             = \&_deploy;
+    *{'DBIx::ThinSQL::db::deploy_file'}         = \&deploy_file;
+    *{'DBIx::ThinSQL::db::deploy_dir'}          = \&deploy_dir;
+    *{'DBIx::ThinSQL::db::deployed_table_info'} = \&deployed_table_info;
 }
 
 1;
