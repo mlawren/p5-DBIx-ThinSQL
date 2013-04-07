@@ -15,6 +15,7 @@ requires 'Path::Tiny'     => 0;
 
 test_requires 'File::chdir'    => 0;
 test_requires 'Test::Database' => 0;
+test_requires 'Test::Fatal'    => 0;
 test_requires 'Test::More'     => 0;
 
 tests_recursive 't';

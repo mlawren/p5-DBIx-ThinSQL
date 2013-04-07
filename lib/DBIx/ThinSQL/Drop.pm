@@ -10,16 +10,17 @@ use DBIx::ThinSQL::Deploy;
 our $VERSION = '0.0.1';
 
 sub drop_everything {
-    my $self   = shift;
-    my $driver = $self->{Driver}->{Name};
+    my $self      = shift;
+    my $driver    = $self->{Driver}->{Name};
+    my $share_dir = $Test::DBIx::ThinSQL::SHARE_DIR
+      || dist_dir('SQL-DB');
 
-    if ( my $share = $Test::DBIx::ThinSQL::SHARE_DIR ) {
-        $self->run_dir( $share->child( 'Drop', $driver ) );
+    my $dir = path( $share_dir, 'Drop', $driver );
+    if ( !-d $dir ) {
+        require Carp;
+        Carp::croak "Drop for driver $driver is unsupported.";
     }
-    else {
-        $self->run_dir( dist_dir('SQL-DB'), 'Drop', $driver );
-    }
-    return;
+    return $self->run_dir($dir);
 }
 
 1;
