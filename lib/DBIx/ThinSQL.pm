@@ -147,25 +147,26 @@ sub xprepare {
         } @$sqlref
     );
 
-    my $bv_count = 0;
-    my $sth      = eval {
-        local $self->{RaiseError} = 1;
-        local $self->{PrintError} = 0;
+    my $bv_count = scalar @$bindref;
+
+    $DBIx::ThinSQL::log->debug(
+        "/* xprepare() with bind: $bv_count quote: $qv_count */\n" . $sql );
+
+    my $sth = eval {
+        local $self->{RaiseError}         = 1;
+        local $self->{PrintError}         = 0;
+        local $self->{ShowErrorStatement} = 1;
         my $sth = $self->prepare($sql);
 
+        my $i = 1;
         foreach my $bv (@$bindref) {
-            $bv_count++;
-            $sth->bind_param( $bv_count, $bv->for_bind_param );
+            $sth->bind_param( $i++, $bv->for_bind_param );
         }
 
         $sth;
     };
 
-    Carp::croak( $@ . "Query (bind: $bv_count quote: $qv_count) was:\n" . $sql )
-      if $@;
-
-    $DBIx::ThinSQL::log->debug(
-        "/* xprepare() with bind: $bv_count quote: $qv_count */\n" . $sql );
+    Carp::croak($@) if $@;
 
     return $sth;
 }
