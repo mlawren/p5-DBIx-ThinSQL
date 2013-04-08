@@ -276,6 +276,12 @@ subtest "DBIx::ThinSQL", sub {
             is_deeply $res, [ [qw/name2 phone2/], [qw/name3 phone3/] ], 'where';
         }
 
+        $res = $db->xdo(
+            insert_into => 'users',
+            values      => { name => 'name4', phone => 'phone4' },
+        );
+        is $res, 1, 'insert using hashref';
+
         $db->disconnect;
 
     }

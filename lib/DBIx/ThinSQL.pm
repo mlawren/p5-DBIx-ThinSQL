@@ -57,15 +57,13 @@ sub _query {
         while ( my ( $key, $val ) = splice( @_, 0, 2 ) )
         {
             ( my $tmp = uc($key) ) =~ s/_/ /g;
-            push( @sql, $tmp );
-            push( @sql, "\n" ) unless lc $key eq 'values';
+            my $VALUES = $tmp eq 'VALUES';
+            if ( !$VALUES ) {
+                push( @sql, $tmp );
+                push( @sql, "\n" );
+            }
 
             next unless defined $val;
-
-            my $brackets;
-            $brackets++ if lc $key eq 'values';
-
-            push( @sql, '(' ) if $brackets;
 
             if ( ref $val eq 'DBIx::ThinSQL::_bv' ) {
 
@@ -75,10 +73,13 @@ sub _query {
                 push( @sql, '?' );
             }
             elsif ( ref $val eq 'ARRAY' ) {
-                if ( $key =~ m/^values$/i ) {
+                if ($VALUES) {
                     _make_bv($val);
-                    push( @sql, _ljoin( ', ', map { '?' } 0 .. $#{$val} ) );
+
+                    push( @sql,  "VALUES\n    (" );
+                    push( @sql,  _ljoin( ', ', map { '?' } 0 .. $#{$val} ) );
                     push( @bind, @$val );
+                    push( @sql,  ')' );
                 }
                 elsif ( $key =~ m/^select/i ) {
                     push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
@@ -92,11 +93,40 @@ sub _query {
                     push( @bind, @$b );
                 }
             }
+            elsif ( ref $val eq 'HASH' ) {
+                if ($VALUES) {
+                    push( @sql, '    (' );
+                    my ( @columns, @values );
+                    while ( my ( $k, $v ) = each %$val ) {
+                        push( @columns, $k );
+                        push( @values,  $v );
+                    }
+                    push( @sql, join( ', ', @columns ) );
+                    push( @sql, ")\nVALUES\n    (" );
+
+                    _make_bv( \@values );
+
+                    push( @sql, _ljoin( ', ', map { '?' } @values ) );
+                    push( @bind, @values );
+                    push( @sql,  ')' );
+                }
+
+          #                elsif ( $key =~ m/^select/i ) {
+          #                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
+          #                }
+          #                elsif ( $key =~ m/^order_by/i ) {
+          #                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
+          #                }
+          #                else {
+          #                    my ( $s, $b ) = _get_bv(@$val);
+          #                    push( @sql, '    ', _ljoin( ' ', @$s ) );
+          #                    push( @bind, @$b );
+          #                }
+            }
             else {
                 push( @sql, '    ' . $val );
             }
 
-            push( @sql, ')' ) if $brackets;
             push( @sql, "\n" );
         }
     };
