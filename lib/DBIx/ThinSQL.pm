@@ -7,7 +7,7 @@ use Exporter::Tidy all => [qw/ bv qv OR AND /];
 use Log::Any qw/$log/;
 
 our @ISA     = 'DBI';
-our @VERSION = '0.0.1';
+our $VERSION = '0.0.1';
 
 sub _get_bv {
     my @sql;
