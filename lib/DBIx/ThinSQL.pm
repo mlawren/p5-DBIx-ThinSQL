@@ -149,6 +149,8 @@ sub xprepare {
 
     my $bv_count = 0;
     my $sth      = eval {
+        local $self->{RaiseError} = 1;
+        local $self->{PrintError} = 0;
         my $sth = $self->prepare($sql);
 
         foreach my $bv (@$bindref) {
