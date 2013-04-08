@@ -95,123 +95,167 @@ subtest "DBIx::ThinSQL", sub {
             insert_into => 'users',
             values      => [ 'name1', bv('phone1') ],
         );
-        is $res, 1, 'insert 1';
+        is $res, 1, 'xdo insert 1';
 
         $res = $db->xdo(
             insert_into => 'users',
             values      => [ bv('name2'), 'phone4' ],
         );
-        is $res, 1, 'insert 2';
+        is $res, 1, 'xdo insert 2';
 
         $res = $db->xdo(
             insert_into => 'users',
             values      => [ 'name3', 'phone3' ],
         );
-        is $res, 1, 'insert 3';
+        is $res, 1, 'xdo insert 3';
 
         $res = $db->xdo(
             delete_from => 'users',
             where       => [ 'name = ', bv('name3') ],
         );
-        is $res, 1, 'delete 3';
+        is $res, 1, 'xdo delete 3';
 
         $res = $db->xdo(
             update => 'users',
             set    => [ 'phone = ', bv('phone2') ],
             where  => [ 'name = ', bv('name2') ],
         );
-        is $res, 1, 'update 2';
+        is $res, 1, 'xdo update 2';
 
-        $res = $db->xarray(
-            select   => 'name, phone',
-            from     => 'users',
-            order_by => 'name',
-        );
+        subtest 'xarray', sub {
+            $res = $db->xarray(
+                select   => 'name, phone',
+                from     => 'users',
+                order_by => 'name',
+            );
 
-        is_deeply $res, [ 'name1', 'phone1' ], 'select string';
+            is_deeply $res, [ 'name1', 'phone1' ], 'xarray scalar';
 
-        $res = $db->xarray(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name desc',
-        );
+            $res = $db->xarray(
+                select => 'name, phone',
+                from   => 'users',
+                where  => 'name IS NULL',
+            );
 
-        is_deeply $res, [ 'name2', 'phone2' ], 'select array';
+            is_deeply $res, undef, 'xarray scalar undef';
 
-        @res = $db->xarray(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name desc',
-        );
+            @res = $db->xarray(
+                select   => [qw/name phone/],
+                from     => 'users',
+                order_by => 'name desc',
+            );
 
-        is_deeply \@res, [ [ 'name2', 'phone2' ] ], 'select array';
+            is_deeply \@res, [ 'name2', 'phone2' ], 'xarray list';
 
-        $res = $db->xarrays(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name asc',
-        );
+            @res = $db->xarray(
+                select => [qw/name phone/],
+                from   => 'users',
+                where  => 'name IS NULL',
+            );
 
-        is_deeply $res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
-          'select arrayref';
+            is_deeply \@res, [], 'xarray list undef';
+        };
 
-        @res = $db->xarrays(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name desc',
-        );
+        subtest 'xarrays', sub {
+            $res = $db->xarrays(
+                select   => [qw/name phone/],
+                from     => 'users',
+                order_by => 'name asc',
+            );
 
-        is_deeply \@res, [ [qw/name2 phone2/], [qw/name1 phone1/] ],
-          'select arrayref';
+            is_deeply $res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
+              'xarrays scalar';
 
-        $res = $db->xhash(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name desc',
-        );
+            $res = $db->xarrays(
+                select => [qw/name phone/],
+                from   => 'users',
+                where  => 'name IS NULL',
+            );
 
-        is_deeply $res, { name => 'name2', phone => 'phone2' }, 'select hash';
+            is_deeply $res, [], 'xarrays scalar undef';
 
-        @res = $db->xhash(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name desc',
-        );
+            @res = $db->xarrays(
+                select   => [qw/name phone/],
+                from     => 'users',
+                order_by => 'name desc',
+            );
 
-        is_deeply \@res, [ { name => 'name2', phone => 'phone2' } ],
-          'select hash';
+            is_deeply \@res, [ [qw/name2 phone2/], [qw/name1 phone1/] ],
+              'xarrays list';
 
-        $res = $db->xhashes(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name asc',
-        );
+            @res = $db->xarrays(
+                select => [qw/name phone/],
+                from   => 'users',
+                where  => 'name IS NULL',
+            );
 
-        is_deeply $res,
-          [
-            { name => 'name1', phone => 'phone1' },
-            {
-                name  => 'name2',
-                phone => 'phone2'
-            }
-          ],
-          'select xhashes';
+            is_deeply \@res, [], 'xarrays list undef';
 
-        @res = $db->xhashes(
-            select   => [qw/name phone/],
-            from     => 'users',
-            order_by => 'name desc',
-        );
+        };
 
-        is_deeply \@res,
-          [
-            { name => 'name2', phone => 'phone2' },
-            {
-                name  => 'name1',
-                phone => 'phone1'
-            }
-          ],
-          'select xhashes';
+        subtest 'xhash', sub {
+            $res = $db->xhash(
+                select   => [qw/name phone/],
+                from     => 'users',
+                order_by => 'name desc',
+            );
+
+            is_deeply $res, { name => 'name2', phone => 'phone2' },
+              'xhash scalar';
+
+            $res = $db->xhash(
+                select => [qw/name phone/],
+                from   => 'users',
+                where  => 'name IS NULL',
+            );
+
+            is_deeply $res, undef, 'xhash scalar undef';
+
+        };
+
+        subtest 'xhashes', sub {
+            $res = $db->xhashes(
+                select   => [qw/name phone/],
+                from     => 'users',
+                order_by => 'name asc',
+            );
+
+            is_deeply $res,
+              [
+                { name => 'name1', phone => 'phone1', },
+                { name => 'name2', phone => 'phone2', },
+              ],
+              'xhashes scalar';
+
+            $res = $db->xhashes(
+                select => [qw/name phone/],
+                from   => 'users',
+                where  => 'name IS NULL',
+            );
+
+            is_deeply $res, [], 'xhashes scalar undef';
+
+            @res = $db->xhashes(
+                select   => [qw/name phone/],
+                from     => 'users',
+                order_by => 'name desc',
+            );
+
+            is_deeply \@res,
+              [
+                { name => 'name2', phone => 'phone2' },
+                { name => 'name1', phone => 'phone1' },
+              ],
+              'xhashes list';
+
+            @res = $db->xhashes(
+                select => [qw/name phone/],
+                from   => 'users',
+                where  => 'name IS NULL',
+            );
+
+            is_deeply \@res, [], 'xhashes list undef';
+        };
 
       SKIP: {
             skip 'DBD::DBM limitation', 2 if $driver eq 'DBM';

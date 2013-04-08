@@ -182,10 +182,12 @@ sub xarray {
 
     my $sth = $self->xprepare(@_);
     $sth->execute;
-    my $ref = $sth->array;
+    my @ref = $sth->array;
     $sth->finish;
 
-    return $ref;
+    return unless @ref;
+    return @ref if wantarray;
+    return \@ref;
 }
 
 sub xarrays {
@@ -360,7 +362,8 @@ sub array {
     my $self = shift;
     return unless $self->{Active};
 
-    my $ref = $self->fetchrow_arrayref;
+    my $ref = $self->fetchrow_arrayref || return;
+
     return @$ref if wantarray;
     return $ref;
 }
@@ -369,7 +372,7 @@ sub arrays {
     my $self = shift;
     return unless $self->{Active};
 
-    my $all = $self->fetchall_arrayref;
+    my $all = $self->fetchall_arrayref || return;
 
     return @$all if wantarray;
     return $all;
