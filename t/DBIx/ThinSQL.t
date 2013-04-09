@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use lib 't/lib';
 use Test::More;
-use DBIx::ThinSQL qw/bv qv OR AND/;
+use DBIx::ThinSQL ':default', ':sql';
 use Test::DBIx::ThinSQL qw/run_in_tempdir/;
 
 subtest "DBIx::ThinSQL::_bv", sub {
@@ -45,6 +45,35 @@ subtest "DBIx::ThinSQL::_qi", sub {
     is $qi->val, 'name', 'qi value match';
 };
 
+subtest "DBIx::ThinSQL::_expr", sub {
+
+    my $bv = bv(1);
+    my $qv = qv(2);
+
+    # _expr
+    my $expr = DBIx::ThinSQL::_expr->new( 'func', 1, $qv, $bv );
+    isa_ok $expr, 'DBIx::ThinSQL::_expr';
+
+    my $func = DBIx::ThinSQL::_expr->func( 'sum', ', ', 1, $qv, $bv );
+    isa_ok $func, 'DBIx::ThinSQL::_expr', 'func';
+
+    is_deeply [ $func->sql ], [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')' ],
+      '_func sql';
+    is_deeply [ $func->bv ], [$bv], '_func bv';
+
+    my $func_as = $func->as('name');
+    isa_ok $func_as, 'DBIx::ThinSQL::_expr', 'func';
+
+    my $sql = [ $func_as->sql ];
+    my $qi  = $sql->[9];
+    isa_ok $qi, 'DBIx::ThinSQL::_qi';
+
+    is_deeply [ $func_as->sql ],
+      [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')', ' AS ', $qi ],
+      '_func sql';
+    is_deeply [ $func_as->bv ], [$bv], '_func bv';
+};
+
 subtest "DBIx::ThinSQL::st", sub {
     can_ok 'DBIx::ThinSQL::st', qw/
       array
@@ -84,31 +113,8 @@ subtest "DBIx::ThinSQL", sub {
           [ [ qw/1 a ? a/, $qv ], [$bv], ],
           'ljoin many with bv and qv';
 
-        # _expr
-        my $func = DBIx::ThinSQL::_expr->new( 'func', 1, $qv, $bv );
-        isa_ok $func, 'DBIx::ThinSQL::_expr';
-
-        $func = DBIx::ThinSQL::sql_func( 'sum', 1, $qv, $bv );
-        isa_ok $func, 'DBIx::ThinSQL::_expr', 'sql_func';
-
-        is_deeply [ $func->sql ], [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')' ],
-          '_func sql';
-        is_deeply [ $func->bv ], [$bv], '_func bv';
-
-        my $func_as = $func->as('name');
-        isa_ok $func_as, 'DBIx::ThinSQL::_expr', 'sql_func';
-
-        my $sql = [ $func_as->sql ];
-        my $qi  = $sql->[9];
-        isa_ok $qi, 'DBIx::ThinSQL::_qi';
-
-        is_deeply [ $func_as->sql ],
-          [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')', ' AS ', $qi ],
-          '_func sql';
-        is_deeply [ $func_as->bv ], [$bv], '_func bv';
-
-        # sql_case
-        my $case = DBIx::ThinSQL::sql_case(
+        # case
+        my $case = case (
             when => 1,
             then => $qv,
             else => $bv,
@@ -119,6 +125,9 @@ subtest "DBIx::ThinSQL", sub {
         like "@sql", qr/CASE \s WHEN \s+ 1 \s+ THEN \s+
             DBIx::ThinSQL::_qv.* \s+ ELSE \s+ \? \s+ END/sx, 'CASE';
 
+        @sql = cast( 'col AS', 'integer' )->as('icol')->sql;
+        like "@sql", qr/CAST \s+ \( \s+ col \s AS \s+ integer \s+ \)
+            \s+ AS \s+ DBIx::ThinSQL::_qi.* /sx, 'CAST';
     };
 
     # now let's make a database check our syntax

@@ -4,13 +4,68 @@ use warnings;
 use DBI;
 use Carp ();
 use Exporter::Tidy
-  default => [qw/ bv qv OR AND /],
+  default => [qw/ bv qv qi OR AND /],
   sql     => [
     qw/
-      sql_case
-      sql_func
+      func
+      case
+      cast
+      coalesce
+      concat
+      count
+      exists
+      hex
+      length
+      lower
+      ltrim
+      max
+      min
+      replace
+      rtrim
+      substr
+      sum
+      upper
+
       /
-  ];
+  ],
+  _map => {
+    bv   => sub { DBIx::ThinSQL::_bv->new(@_) },
+    qv   => sub { DBIx::ThinSQL::_qv->new(@_) },
+    qi   => sub { DBIx::ThinSQL::_qi->new(@_) },
+    OR   => sub { ' OR ' },
+    AND  => sub { ' AND ' },
+    cast => sub { DBIx::ThinSQL::_expr->func( 'cast', ' ', @_ ) },
+    case => sub {
+        shift @_;
+        unshift @_, 'case when';
+
+        my @sql;
+        my @bv;
+
+        while ( my ( $key, $val ) = splice( @_, 0, 2 ) ) {
+            my ( $sql, $bv ) = _ljoin( "\n        ", uc($key), $val );
+            push( @sql, @$sql, "\n    " );
+            push( @bv, @$bv );
+        }
+        push( @sql, 'END' );
+
+        return DBIx::ThinSQL::_expr->new( \@sql, \@bv );
+    },
+    coalesce => sub { DBIx::ThinSQL::_expr->func( 'coalesce', ', ', @_ ) },
+    count    => sub { DBIx::ThinSQL::_expr->func( 'count',    ', ', @_ ) },
+    exists   => sub { DBIx::ThinSQL::_expr->func( 'exists',   ', ', @_ ) },
+    hex      => sub { DBIx::ThinSQL::_expr->func( 'hex',      ', ', @_ ) },
+    length   => sub { DBIx::ThinSQL::_expr->func( 'length',   ', ', @_ ) },
+    lower    => sub { DBIx::ThinSQL::_expr->func( 'lower',    ', ', @_ ) },
+    ltrim    => sub { DBIx::ThinSQL::_expr->func( 'ltrim',    ', ', @_ ) },
+    max      => sub { DBIx::ThinSQL::_expr->func( 'max',      ', ', @_ ) },
+    min      => sub { DBIx::ThinSQL::_expr->func( 'min',      ', ', @_ ) },
+    replace  => sub { DBIx::ThinSQL::_expr->func( 'replace',  ', ', @_ ) },
+    rtrim    => sub { DBIx::ThinSQL::_expr->func( 'rtrim',    ', ', @_ ) },
+    substr   => sub { DBIx::ThinSQL::_expr->func( 'substr',   ', ', @_ ) },
+    sum      => sub { DBIx::ThinSQL::_expr->func( 'sum',      ', ', @_ ) },
+    upper    => sub { DBIx::ThinSQL::_expr->func( 'upper',    ', ', @_ ) },
+  };
 use Log::Any qw/$log/;
 
 our @ISA     = 'DBI';
@@ -137,37 +192,6 @@ sub _query {
     Carp::croak "Bad Query: $@" if $@;
     return \@sql, \@bv;
 }
-
-sub sql_case {
-    shift @_;
-    unshift @_, 'case when';
-
-    my @sql;
-    my @bv;
-
-    while ( my ( $key, $val ) = splice( @_, 0, 2 ) ) {
-        my ( $sql, $bv ) = _ljoin( "\n        ", uc($key), $val );
-        push( @sql, @$sql, "\n    " );
-        push( @bv, @$bv );
-    }
-    push( @sql, 'END' );
-
-    return DBIx::ThinSQL::_expr->new( \@sql, \@bv );
-}
-
-sub sql_func {
-    my $func = uc shift;
-
-    my ( $sql, $bv ) = DBIx::ThinSQL::_ljoin( ', ', @_ );
-    unshift( @$sql, $func, '(' );
-    push( @$sql, ')' );
-    return DBIx::ThinSQL::_expr->new( $sql, $bv );
-}
-
-sub bv  { DBIx::ThinSQL::_bv->new(@_); }
-sub qv  { DBIx::ThinSQL::_qv->new(@_); }
-sub OR  { ' OR ' }
-sub AND { ' AND ' }
 
 package DBIx::ThinSQL::db;
 use strict;
@@ -402,6 +426,18 @@ use warnings;
 sub new {
     my $class = shift;
     return bless [@_], $class;
+}
+
+# another kind of constructor
+sub func {
+    my $class = shift;
+    my $func  = uc shift;
+    my $token = shift;
+
+    my ( $sql, $bv ) = DBIx::ThinSQL::_ljoin( $token, @_ );
+    unshift( @$sql, $func, '(' );
+    push( @$sql, ')' );
+    return $class->new( $sql, $bv );
 }
 
 sub sql {
