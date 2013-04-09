@@ -17,6 +17,9 @@ subtest "DBIx::ThinSQL::_bv", sub {
     is $bv->val,  1,     'bv value match';
     is $bv->type, undef, 'bv type match';
     is_deeply [ $bv->for_bind_param ], [1], 'for_bind_param undef';
+
+    my $qv = DBIx::ThinSQL::_qv->new(1);
+    is( DBIx::ThinSQL::_bv->new($qv), $qv, 'qv passthrough' );
 };
 
 subtest "DBIx::ThinSQL::_qv", sub {
@@ -31,6 +34,9 @@ subtest "DBIx::ThinSQL::_qv", sub {
     is $qv->val,  1,     'qv value match';
     is $qv->type, undef, 'qv type match';
     is_deeply [ $qv->for_quote ], [1], 'for_quote undef';
+
+    my $bv = DBIx::ThinSQL::_bv->new(1);
+    is( DBIx::ThinSQL::_qv->new($bv), $bv, 'bv passthrough' );
 };
 
 subtest "DBIx::ThinSQL::st", sub {

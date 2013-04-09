@@ -436,6 +436,7 @@ use warnings;
 
 sub new {
     my $class = shift;
+    return $_[0] if ( ref $_[0] ) =~ m/^DBIx::ThinSQL::_/;
     return bless [@_], $class;
 }
 
@@ -463,6 +464,7 @@ use warnings;
 
 sub new {
     my $class = shift;
+    return $_[0] if ( ref $_[0] ) =~ m/^DBIx::ThinSQL::_/;
     return bless [@_], $class;
 }
 
