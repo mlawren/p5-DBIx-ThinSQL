@@ -9,23 +9,6 @@ use Log::Any qw/$log/;
 our @ISA     = 'DBI';
 our $VERSION = '0.0.1';
 
-sub _get_bv {
-    my @sql;
-    my @bv;
-    my $space = '';
-
-    foreach my $token (@_) {
-        if ( ref $token eq 'DBIx::ThinSQL::_bv' ) {
-            push( @sql, '?' );
-            push( @bv,  $token );
-        }
-        else {
-            push( @sql, $token );
-        }
-    }
-    return \@sql, \@bv;
-}
-
 sub _make_bv {
     return map { DBIx::ThinSQL::_bv->new($_) } @_;
 }
@@ -161,12 +144,6 @@ use warnings;
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
 
-# For testing - see t/01
-sub _private_dbix_sqlx_sponge {
-    my $self = shift;
-    $self->{private_dbix_sqlx_sponge} = shift;
-}
-
 sub xprepare {
     my $self = shift;
 
@@ -256,140 +233,6 @@ sub xhashes {
     my $sth = $self->xprepare(@_);
     $sth->execute;
     return $sth->hashes;
-}
-
-sub insert {
-    my $self       = shift;
-    my $str_into   = shift;
-    my $table      = shift;
-    my $str_values = shift;
-    my $values     = shift;
-
-    unless ($str_into eq 'into'
-        and $str_values eq 'values'
-        and ( eval { $values->isa('HASH') } ) )
-    {
-        Carp::croak 'usage: insert(into => $table, values => $hashref)';
-    }
-
-    my $urow = $self->urow($table);
-
-    my @cols    = sort grep { $urow->can($_) } keys %$values;
-    my @invalid = sort grep { !$urow->can($_) } keys %$values;
-    my @vals = map { _bval( $values->{$_}, $urow->$_->_type ) } @cols;
-
-    $DBIx::ThinSQL::log->debug(
-        "columns not in table '$table': @invalid\n    at", caller )
-      if @invalid;
-    Carp::croak 'insert_into requires columns/values' unless @cols;
-
-    return 0 + $self->do(
-        insert_into => sql_table( $table, @cols ),
-        sql_values(@vals),
-    );
-}
-
-# $db->update('purchases',
-#     set   => {pid => 2},
-#     where => {cid => 1},
-# );
-sub update {
-    my $self  = shift;
-    my $table = shift;
-    shift;
-    my $set = shift;
-    shift;
-    my $where = shift;
-
-    my $urow = $self->urow($table);
-    my @updates = map { $urow->$_( $set->{$_} ) }
-      grep { $urow->can($_) and !exists $where->{$_} } keys %$set;
-
-    unless (@updates) {
-        $DBIx::ThinSQL::log->debug( "Nothing to update for table:", $table );
-        return 0;
-    }
-
-    my $expr;
-    if ( my @keys = keys %$where ) {
-        $expr =
-          _expr_join( ' AND ',
-            map { $urow->$_ == $where->{$_} } grep { $urow->can($_) } @keys );
-    }
-
-    return 0 + $self->do(
-        update => $urow,
-        set    => \@updates,
-        $expr ? ( where => $expr ) : (),
-    );
-}
-
-# $db->delete(
-#    from => 'purchases',
-#    where => {cid => 1},
-# );
-
-sub delete {
-    my $self = shift;
-    shift;    # from
-    my $table = shift;
-    shift;    # where
-    my $where = shift;
-
-    my @expr;
-    my @keys = keys %$where;
-
-    while (@keys) {
-        push( @expr, 'where' ) unless @expr;
-
-        my $key = shift @keys;
-
-        push( @expr,
-            $self->quote_identifier($key),
-            ' = ', qv( $where->{$key} ) );
-
-        push( @expr, ' AND ' ) if @keys;
-    }
-
-    return $self->do(
-        delete_from => $table,
-        @expr,
-    );
-}
-
-# my @objs = $db->select( ['pid','label],
-#     from => 'customers',
-#     where => {cid => 1},
-# );
-sub select {
-    my $self = shift;
-    my $list = shift;
-    shift;
-    my $table = shift;
-    shift;
-    my $where = shift;
-
-    my $srow = $self->srow($table);
-    my @columns = map { $srow->$_ } @$list;
-
-    @columns || Carp::croak 'select requires columns';
-
-    my $expr;
-    if ( my @keys = keys %$where ) {
-        $expr = _expr_join( ' AND ', map { $srow->$_ == $where->{$_} } @keys );
-    }
-
-    return $self->fetch(
-        select => \@columns,
-        from   => $srow,
-        $expr ? ( where => $expr ) : (),
-    ) if wantarray;
-
-    return $self->fetch1(
-        select => \@columns,
-        from   => $srow,
-        $expr ? ( where => $expr ) : (),
-    );
 }
 
 package DBIx::ThinSQL::st;
