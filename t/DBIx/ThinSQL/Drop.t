@@ -8,7 +8,10 @@ use Test::Database;
 use Test::Fatal qw/exception/;
 use Test::More;
 
+my $handle_count;
+
 foreach my $handle ( Test::Database->handles(qw/SQLite Pg DBM/) ) {
+    $handle_count++;
 
     subtest 'Drop ' . $handle->dbd, sub {
 
@@ -67,5 +70,7 @@ foreach my $handle ( Test::Database->handles(qw/SQLite Pg DBM/) ) {
         };
     };
 }
+
+plan skip_all => 'No database handles available' unless $handle_count;
 
 done_testing();
