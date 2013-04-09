@@ -39,6 +39,12 @@ subtest "DBIx::ThinSQL::_qv", sub {
     is( DBIx::ThinSQL::_qv->new($bv), $bv, 'bv passthrough' );
 };
 
+subtest "DBIx::ThinSQL::_qi", sub {
+    my $qi = DBIx::ThinSQL::_qi->new('name');
+    isa_ok $qi, 'DBIx::ThinSQL::_qi';
+    is $qi->val, 'name', 'qi value match';
+};
+
 subtest "DBIx::ThinSQL::st", sub {
     can_ok 'DBIx::ThinSQL::st', qw/
       array

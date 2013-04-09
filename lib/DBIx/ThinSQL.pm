@@ -149,6 +149,7 @@ sub xprepare {
 
     my ( $sqlref, $bindref ) = DBIx::ThinSQL::_query(@_);
     my $qv_count = 0;
+    my $qi_count = 0;
 
     my $sql = join(
         '',
@@ -157,6 +158,10 @@ sub xprepare {
             {
                 $qv_count++;
                 $self->quote( $_->for_quote );
+            }
+            elsif ( ref $_ eq 'DBIx::ThinSQL::_qi' ) {
+                $qi_count++;
+                $self->quote_identifier( $_->val );
             }
             else {
                 $_;
@@ -167,7 +172,9 @@ sub xprepare {
     my $bv_count = scalar @$bindref;
 
     $DBIx::ThinSQL::log->debug(
-        "/* xprepare() with bind: $bv_count quote: $qv_count */\n" . $sql );
+            "/* xprepare() with bind: $bv_count quote: $qv_count "
+          . "ident: $qi_count */\n"
+          . $sql );
 
     my $sth = eval {
         local $self->{RaiseError}         = 1;
@@ -337,6 +344,23 @@ sub for_quote {
 
     # value
     return $self->[0];
+}
+
+package DBIx::ThinSQL::_qi;
+use strict;
+use warnings;
+
+sub new {
+    my $class = shift;
+    return $_[0] if ( ref $_[0] ) =~ m/^DBIx::ThinSQL::_/;
+
+    my $id = shift;
+    return bless \$id, $class;
+}
+
+sub val {
+    my $self = shift;
+    return $$self;
 }
 
 1;
