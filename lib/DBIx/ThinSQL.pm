@@ -43,9 +43,11 @@ use Exporter::Tidy
         my @bv;
 
         while ( my ( $key, $val ) = splice( @_, 0, 2 ) ) {
-            my ( $sql, $bv ) = _ljoin( "\n        ", uc($key), $val );
-            push( @sql, @$sql, "\n    " );
-            push( @bv, @$bv );
+            my $expr =
+              DBIx::ThinSQL::_expr->ejoin( "\n        ", uc($key), $val );
+
+            push( @sql, $expr->sql, "\n    " );
+            push( @bv, $expr->bv );
         }
         push( @sql, 'END' );
 
@@ -71,36 +73,12 @@ use Log::Any qw/$log/;
 our @ISA     = 'DBI';
 our $VERSION = '0.0.1';
 
-sub _ljoin {
-    my $token = shift;
-    return ( [], [] ) unless @_;
+package DBIx::ThinSQL::db;
+use strict;
+use warnings;
 
-    my $last = $#_;
-    my @sql;
-    my @bv;
-
-    my $i = 0;
-    foreach my $item (@_) {
-        if ( ref $item eq 'ARRAY' ) {    # CASE WHEN ... in a SELECT?
-            push( @sql, _ljoin( undef, @$item ) );
-        }
-        elsif ( ref $item eq 'DBIx::ThinSQL::_bv' ) {
-            push( @sql, '?' );
-            push( @bv,  $item );
-        }
-        elsif ( ref $item eq 'DBIx::ThinSQL::_expr' ) {
-            push( @sql, $item->sql );
-            push( @bv,  $item->bv );
-        }
-        else {
-            push( @sql, $item );
-        }
-        push( @sql, $token ) unless !defined $token or $i == $last;
-        $i++;
-    }
-
-    return \@sql, \@bv;
-}
+our @ISA = qw(DBI::db);
+our @CARP_NOT;
 
 sub _query {
 
@@ -130,26 +108,27 @@ sub _query {
             }
             elsif ( ref $val eq 'ARRAY' ) {
                 if ($VALUES) {
-                    my ( $sql, $bv ) =
-                      _ljoin( ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val );
+                    my $expr =
+                      DBIx::ThinSQL::_expr->ejoin( ', ',
+                        map { DBIx::ThinSQL::_bv->new($_) } @$val );
 
-                    push( @sql, "VALUES\n    (", @$sql, ')' );
-                    push( @bv, @$bv );
+                    push( @sql, "VALUES\n    (", $expr->sql, ')' );
+                    push( @bv, $expr->bv );
                 }
                 elsif ( $key =~ m/^select/i ) {
-                    my ( $sql, $bv ) = _ljoin( ",\n    ", @$val );
-                    push( @sql, '    ', @$sql );
-                    push( @bv, @$bv );
+                    my $expr = DBIx::ThinSQL::_expr->ejoin( ",\n    ", @$val );
+                    push( @sql, '    ', $expr->sql );
+                    push( @bv, $expr->bv );
                 }
                 elsif ( $key =~ m/^order_by/i ) {
-                    my ( $sql, $bv ) = _ljoin( ",\n    ", @$val );
-                    push( @sql, '    ', @$sql );
-                    push( @bv, @$bv );
+                    my $expr = DBIx::ThinSQL::_expr->ejoin( ",\n    ", @$val );
+                    push( @sql, '    ', $expr->sql );
+                    push( @bv, $expr->bv );
                 }
                 else {
-                    my ( $sql, $bv ) = _ljoin( undef, @$val );
-                    push( @sql, '    ', @$sql );
-                    push( @bv, @$bv );
+                    my $expr = DBIx::ThinSQL::_expr->ejoin( undef, @$val );
+                    push( @sql, '    ', $expr->sql );
+                    push( @bv, $expr->bv );
                 }
             }
             elsif ( ref $val eq 'HASH' ) {
@@ -160,26 +139,29 @@ sub _query {
                         push( @values,  $v );
                     }
 
-                    my ( $sql, $bv ) =
-                      _ljoin( ', ',
+                    my $expr =
+                      DBIx::ThinSQL::_expr->ejoin( ', ',
                         map { DBIx::ThinSQL::_bv->new($_) } @values );
 
                     push( @sql, '    (', join( ', ', @columns ), ")\n" );
-                    push( @sql, "VALUES\n    (", @$sql, ')' );
-                    push( @bv, @$bv );
+                    push( @sql, "VALUES\n    (", $expr->sql, ')' );
+                    push( @bv, $expr->bv );
                 }
 
-          #                elsif ( $key =~ m/^select/i ) {
-          #                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
-          #                }
-          #                elsif ( $key =~ m/^order_by/i ) {
-          #                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
-          #                }
-          #                else {
-          #                    my ( $s, $b ) = _get_bv(@$val);
-          #                    push( @sql, '    ', _ljoin( ' ', @$s ) );
-          #                    push( @bv, @$b );
-          #                }
+         #                elsif ( $key =~ m/^select/i ) {
+         #                    push( @sql, '    ',
+         #                    DBIx::ThinSQL::_expr->ejoin( ",\n    ", @$val ) );
+         #                }
+         #                elsif ( $key =~ m/^order_by/i ) {
+         #                    push( @sql, '    ',
+         #                    DBIx::ThinSQL::_expr->ejoin( ",\n    ", @$val ) );
+         #                }
+         #                else {
+         #                    my ( $s, $b ) = _get_bv(@$val);
+         #                    push( @sql, '    ',
+         #                    DBIx::ThinSQL::_expr->ejoin( ' ', @$s ) );
+         #                    push( @bv, @$b );
+         #                }
             }
             else {
                 push( @sql, '    ' . $val );
@@ -193,17 +175,10 @@ sub _query {
     return \@sql, \@bv;
 }
 
-package DBIx::ThinSQL::db;
-use strict;
-use warnings;
-
-our @ISA = qw(DBI::db);
-our @CARP_NOT;
-
 sub xprepare {
     my $self = shift;
 
-    my ( $sqlref, $bindref ) = DBIx::ThinSQL::_query(@_);
+    my ( $sqlref, $bindref ) = _query(@_);
     my $qv_count = 0;
     my $qi_count = 0;
 
@@ -429,15 +404,46 @@ sub new {
 }
 
 # another kind of constructor
+sub ejoin {
+    my $class = shift;
+    my $token = shift;
+    return bless( [ [], [] ], $class ) unless @_;
+
+    my $last = $#_;
+    my @sql;
+    my @bv;
+
+    my $i = 0;
+    foreach my $item (@_) {
+        if ( ref $item eq 'ARRAY' ) {    # CASE WHEN ... in a SELECT?
+            push( @sql, $class->ejoin( undef, @$item ) );
+        }
+        elsif ( ref $item eq 'DBIx::ThinSQL::_bv' ) {
+            push( @sql, '?' );
+            push( @bv,  $item );
+        }
+        elsif ( ref $item eq 'DBIx::ThinSQL::_expr' ) {
+            push( @sql, $item->sql );
+            push( @bv,  $item->bv );
+        }
+        else {
+            push( @sql, $item );
+        }
+        push( @sql, $token ) unless !defined $token or $i == $last;
+        $i++;
+    }
+
+    return bless [ \@sql, \@bv ], $class;
+}
+
+# and yet another kind of constructor
 sub func {
     my $class = shift;
     my $func  = uc shift;
     my $token = shift;
 
-    my ( $sql, $bv ) = DBIx::ThinSQL::_ljoin( $token, @_ );
-    unshift( @$sql, $func, '(' );
-    push( @$sql, ')' );
-    return $class->new( $sql, $bv );
+    my $expr = $class->ejoin( $token, @_ );
+    return bless [ [ $func, '(', $expr->sql, ')' ], [ $expr->bv ] ], $class;
 }
 
 sub sql {

@@ -94,24 +94,28 @@ subtest "DBIx::ThinSQL", sub {
     subtest 'internal', sub {
 
         # _ljoin
-        is_deeply [ DBIx::ThinSQL::_ljoin(qw/a/) ], [ [], [], ],
-          'ljoin nothing';
+        my $expr = DBIx::ThinSQL::_expr->ejoin('a');
+        isa_ok $expr, 'DBIx::ThinSQL::_expr';
+        is_deeply [ $expr->sql ], [], 'ejoin nothing sql';
+        is_deeply [ $expr->bv ],  [], 'ejoin nothing bv';
 
-        my ( $s, $b ) = DBIx::ThinSQL::_ljoin(qw/a 1/);
+        $expr = DBIx::ThinSQL::_expr->ejoin(qw/ a 1 /);
+        isa_ok $expr, 'DBIx::ThinSQL::_expr';
+        is_deeply [ $expr->sql ], [1], 'ejoin one sql';
+        is_deeply [ $expr->bv ], [], 'ejoin one bv';
 
-        is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1/) ], [ [qw/1/], [], ],
-          'ljoin one';
-
-        is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1 2 3 4/) ],
-          [ [qw/1 a 2 a 3 a 4/], [], ],
-          'ljoin many';
+        $expr = DBIx::ThinSQL::_expr->ejoin(qw/ a 1 2 3 4 /);
+        isa_ok $expr, 'DBIx::ThinSQL::_expr';
+        is_deeply [ $expr->sql ], [qw/ 1 a 2 a 3 a 4 /], 'ejoin many sql';
+        is_deeply [ $expr->bv ], [], 'ejoin many bv';
 
         my $bv = bv(1);
         my $qv = qv(2);
 
-        is_deeply [ DBIx::ThinSQL::_ljoin( qw/a 1 /, $bv, $qv ) ],
-          [ [ qw/1 a ? a/, $qv ], [$bv], ],
-          'ljoin many with bv and qv';
+        $expr = DBIx::ThinSQL::_expr->ejoin( qw/ a 1 /, $bv, $qv );
+        isa_ok $expr, 'DBIx::ThinSQL::_expr';
+        is_deeply [ $expr->sql ], [ qw/ 1 a ? a /, $qv ], 'ejoin many sql';
+        is_deeply [ $expr->bv ], [$bv], 'ejoin many bv';
 
         # case
         my $case = case (
