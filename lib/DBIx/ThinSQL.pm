@@ -3,15 +3,17 @@ use strict;
 use warnings;
 use DBI;
 use Carp ();
-use Exporter::Tidy all => [qw/ bv qv OR AND /];
+use Exporter::Tidy
+  default => [qw/ bv qv OR AND /],
+  sql     => [
+    qw/
+      sql_func
+      /
+  ];
 use Log::Any qw/$log/;
 
 our @ISA     = 'DBI';
 our $VERSION = '0.0.1';
-
-sub _make_bv {
-    return map { DBIx::ThinSQL::_bv->new($_) } @_;
-}
 
 sub _ljoin {
     my $token = shift;
@@ -29,6 +31,10 @@ sub _ljoin {
         elsif ( ref $item eq 'DBIx::ThinSQL::_bv' ) {
             push( @sql, '?' );
             push( @bv,  $item );
+        }
+        elsif ( ref $item eq 'DBIx::ThinSQL::_func' ) {
+            push( @sql, $item->sql );
+            push( @bv,  $item->bv );
         }
         else {
             push( @sql, $item );
@@ -68,7 +74,8 @@ sub _query {
             }
             elsif ( ref $val eq 'ARRAY' ) {
                 if ($VALUES) {
-                    my ( $sql, $bv ) = _ljoin( ', ', _make_bv(@$val) );
+                    my ( $sql, $bv ) =
+                      _ljoin( ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val );
 
                     push( @sql, "VALUES\n    (", @$sql, ')' );
                     push( @bv, @$bv );
@@ -97,7 +104,9 @@ sub _query {
                         push( @values,  $v );
                     }
 
-                    my ( $sql, $bv ) = _ljoin( ', ', _make_bv(@values) );
+                    my ( $sql, $bv ) =
+                      _ljoin( ', ',
+                        map { DBIx::ThinSQL::_bv->new($_) } @values );
 
                     push( @sql, '    (', join( ', ', @columns ), ")\n" );
                     push( @sql, "VALUES\n    (", @$sql, ')' );
@@ -130,6 +139,11 @@ sub _query {
 
 sub sql_case {
     _query( 'case_' . shift, map { '    ' . $_ } @_, 'END' );
+}
+
+sub sql_func {
+    my $func = uc shift;
+    return DBIx::ThinSQL::_func->new( $func, @_ );
 }
 
 sub bv  { DBIx::ThinSQL::_bv->new(@_); }
@@ -361,6 +375,38 @@ sub new {
 sub val {
     my $self = shift;
     return $$self;
+}
+
+package DBIx::ThinSQL::_func;
+use strict;
+use warnings;
+
+sub new {
+    my $class = shift;
+    my $func  = shift;
+    my @list  = ( $func, '(' );
+
+    my ( $sql, $bv ) = DBIx::ThinSQL::_ljoin( ', ', @_ );
+    unshift( @$sql, $func, '(' );
+    push( @$sql, ')' );
+
+    return bless [ $sql, $bv ], $class;
+}
+
+sub sql {
+    return @{ $_[0]->[0] };
+}
+
+sub bv {
+    return @{ $_[0]->[1] };
+}
+
+sub as {
+    my $self  = shift;
+    my $value = shift;
+
+    push( @{ $self->[0] }, ' AS ', DBIx::ThinSQL::_qi->new($value) );
+    return $self;
 }
 
 1;

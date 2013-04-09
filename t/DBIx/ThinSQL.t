@@ -62,23 +62,52 @@ subtest "DBIx::ThinSQL", sub {
     isa_ok \&AND, 'CODE', 'export AND';
     isa_ok \&OR,  'CODE', 'export OR';
 
-    # _ljoin
-    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a/) ], [ [], [], ], 'ljoin nothing';
+    subtest 'internal', sub {
 
-    my ( $s, $b ) = DBIx::ThinSQL::_ljoin(qw/a 1/);
+        # _ljoin
+        is_deeply [ DBIx::ThinSQL::_ljoin(qw/a/) ], [ [], [], ],
+          'ljoin nothing';
 
-    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1/) ], [ [qw/1/], [], ], 'ljoin one';
+        my ( $s, $b ) = DBIx::ThinSQL::_ljoin(qw/a 1/);
 
-    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1 2 3 4/) ],
-      [ [qw/1 a 2 a 3 a 4/], [], ],
-      'ljoin many';
+        is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1/) ], [ [qw/1/], [], ],
+          'ljoin one';
 
-    my $bv = bv(1);
-    my $qv = qv(1);
+        is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1 2 3 4/) ],
+          [ [qw/1 a 2 a 3 a 4/], [], ],
+          'ljoin many';
 
-    is_deeply [ DBIx::ThinSQL::_ljoin( qw/a 1 /, $bv, $qv ) ],
-      [ [ qw/1 a ? a/, $qv ], [$bv], ],
-      'ljoin many with bv and qv';
+        my $bv = bv(1);
+        my $qv = qv(2);
+
+        is_deeply [ DBIx::ThinSQL::_ljoin( qw/a 1 /, $bv, $qv ) ],
+          [ [ qw/1 a ? a/, $qv ], [$bv], ],
+          'ljoin many with bv and qv';
+
+        # sql_func
+        my $func = DBIx::ThinSQL::_func->new( 'func', 1, $qv, $bv );
+        isa_ok $func, 'DBIx::ThinSQL::_func';
+
+        $func = DBIx::ThinSQL::sql_func( 'sum', 1, $qv, $bv );
+        isa_ok $func, 'DBIx::ThinSQL::_func', 'sql_func';
+
+        is_deeply [ $func->sql ], [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')' ],
+          '_func sql';
+        is_deeply [ $func->bv ], [$bv], '_func bv';
+
+        my $func_as = $func->as('name');
+        isa_ok $func_as, 'DBIx::ThinSQL::_func', 'sql_func';
+
+        my $sql = [ $func_as->sql ];
+        my $qi  = $sql->[9];
+        isa_ok $qi, 'DBIx::ThinSQL::_qi';
+
+        is_deeply [ $func_as->sql ],
+          [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')', ' AS ', $qi ],
+          '_func sql';
+        is_deeply [ $func_as->bv ], [$bv], '_func bv';
+
+    };
 
     # now let's make a database check our syntax
     run_in_tempdir {
