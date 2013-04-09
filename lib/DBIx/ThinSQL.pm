@@ -7,6 +7,7 @@ use Exporter::Tidy
   default => [qw/ bv qv OR AND /],
   sql     => [
     qw/
+      sql_case
       sql_func
       /
   ];
@@ -32,7 +33,7 @@ sub _ljoin {
             push( @sql, '?' );
             push( @bv,  $item );
         }
-        elsif ( ref $item eq 'DBIx::ThinSQL::_func' ) {
+        elsif ( ref $item eq 'DBIx::ThinSQL::_expr' ) {
             push( @sql, $item->sql );
             push( @bv,  $item->bv );
         }
@@ -138,12 +139,29 @@ sub _query {
 }
 
 sub sql_case {
-    _query( 'case_' . shift, map { '    ' . $_ } @_, 'END' );
+    shift @_;
+    unshift @_, 'case when';
+
+    my @sql;
+    my @bv;
+
+    while ( my ( $key, $val ) = splice( @_, 0, 2 ) ) {
+        my ( $sql, $bv ) = _ljoin( "\n        ", uc($key), $val );
+        push( @sql, @$sql, "\n    " );
+        push( @bv, @$bv );
+    }
+    push( @sql, 'END' );
+
+    return DBIx::ThinSQL::_expr->new( \@sql, \@bv );
 }
 
 sub sql_func {
     my $func = uc shift;
-    return DBIx::ThinSQL::_func->new( $func, @_ );
+
+    my ( $sql, $bv ) = DBIx::ThinSQL::_ljoin( ', ', @_ );
+    unshift( @$sql, $func, '(' );
+    push( @$sql, ')' );
+    return DBIx::ThinSQL::_expr->new( $sql, $bv );
 }
 
 sub bv  { DBIx::ThinSQL::_bv->new(@_); }
@@ -377,20 +395,13 @@ sub val {
     return $$self;
 }
 
-package DBIx::ThinSQL::_func;
+package DBIx::ThinSQL::_expr;
 use strict;
 use warnings;
 
 sub new {
     my $class = shift;
-    my $func  = shift;
-    my @list  = ( $func, '(' );
-
-    my ( $sql, $bv ) = DBIx::ThinSQL::_ljoin( ', ', @_ );
-    unshift( @$sql, $func, '(' );
-    push( @$sql, ')' );
-
-    return bless [ $sql, $bv ], $class;
+    return bless [@_], $class;
 }
 
 sub sql {

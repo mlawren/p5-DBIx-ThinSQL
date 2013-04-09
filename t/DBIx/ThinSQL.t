@@ -84,19 +84,19 @@ subtest "DBIx::ThinSQL", sub {
           [ [ qw/1 a ? a/, $qv ], [$bv], ],
           'ljoin many with bv and qv';
 
-        # sql_func
-        my $func = DBIx::ThinSQL::_func->new( 'func', 1, $qv, $bv );
-        isa_ok $func, 'DBIx::ThinSQL::_func';
+        # _expr
+        my $func = DBIx::ThinSQL::_expr->new( 'func', 1, $qv, $bv );
+        isa_ok $func, 'DBIx::ThinSQL::_expr';
 
         $func = DBIx::ThinSQL::sql_func( 'sum', 1, $qv, $bv );
-        isa_ok $func, 'DBIx::ThinSQL::_func', 'sql_func';
+        isa_ok $func, 'DBIx::ThinSQL::_expr', 'sql_func';
 
         is_deeply [ $func->sql ], [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')' ],
           '_func sql';
         is_deeply [ $func->bv ], [$bv], '_func bv';
 
         my $func_as = $func->as('name');
-        isa_ok $func_as, 'DBIx::ThinSQL::_func', 'sql_func';
+        isa_ok $func_as, 'DBIx::ThinSQL::_expr', 'sql_func';
 
         my $sql = [ $func_as->sql ];
         my $qi  = $sql->[9];
@@ -106,6 +106,18 @@ subtest "DBIx::ThinSQL", sub {
           [ 'SUM', '(', 1, ', ', $qv, ', ', '?', ')', ' AS ', $qi ],
           '_func sql';
         is_deeply [ $func_as->bv ], [$bv], '_func bv';
+
+        # sql_case
+        my $case = DBIx::ThinSQL::sql_case(
+            when => 1,
+            then => $qv,
+            else => $bv,
+        );
+        isa_ok $case, 'DBIx::ThinSQL::_expr';
+
+        my @sql = $case->sql;
+        like "@sql", qr/CASE \s WHEN \s+ 1 \s+ THEN \s+
+            DBIx::ThinSQL::_qv.* \s+ ELSE \s+ \? \s+ END/sx, 'CASE';
 
     };
 
