@@ -27,31 +27,42 @@ sub _get_bv {
 }
 
 sub _make_bv {
-    my $ref = shift;
-
-    foreach my $i ( 0 .. $#{$ref} ) {
-        $ref->[$i] = DBIx::ThinSQL::_bv->new( $ref->[$i] )
-          unless ( ref $ref->[$i] ) =~ m/^DBIx::ThinSQL::_(b|q)v$/;
-    }
-    return;
+    return map { DBIx::ThinSQL::_bv->new($_) } @_;
 }
 
 sub _ljoin {
     my $token = shift;
-    return unless @_;
+    return ( [], [] ) unless @_;
 
-    my $last = pop @_;
-    return $last unless @_;
+    my $last = $#_;
+    my @sql;
+    my @bv;
 
-    return ( map { $_ => $token } @_ ), $last;
+    my $i = 0;
+    foreach my $item (@_) {
+        if ( ref $item eq 'ARRAY' ) {    # CASE WHEN ... in a SELECT?
+            push( @sql, _ljoin( undef, @$item ) );
+        }
+        elsif ( ref $item eq 'DBIx::ThinSQL::_bv' ) {
+            push( @sql, '?' );
+            push( @bv,  $item );
+        }
+        else {
+            push( @sql, $item );
+        }
+        push( @sql, $token ) unless !defined $token or $i == $last;
+        $i++;
+    }
+
+    return \@sql, \@bv;
 }
 
 sub _query {
 
-    #    use Data::Dumper;
-    #    warn Dumper \@_;
+    # use Data::Dumper;
+    # warn Dumper \@_;
     my @sql;
-    my @bind;
+    my @bv;
 
     eval {
         while ( my ( $key, $val ) = splice( @_, 0, 2 ) )
@@ -67,48 +78,47 @@ sub _query {
 
             if ( ref $val eq 'DBIx::ThinSQL::_bv' ) {
 
-                push( @bind, $val );
+                push( @bv, $val );
 
-                # add to @bind
+                # add to @bv
                 push( @sql, '?' );
             }
             elsif ( ref $val eq 'ARRAY' ) {
                 if ($VALUES) {
-                    _make_bv($val);
+                    my ( $sql, $bv ) = _ljoin( ', ', _make_bv(@$val) );
 
-                    push( @sql,  "VALUES\n    (" );
-                    push( @sql,  _ljoin( ', ', map { '?' } 0 .. $#{$val} ) );
-                    push( @bind, @$val );
-                    push( @sql,  ')' );
+                    push( @sql, "VALUES\n    (", @$sql, ')' );
+                    push( @bv, @$bv );
                 }
                 elsif ( $key =~ m/^select/i ) {
-                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
+                    my ( $sql, $bv ) = _ljoin( ",\n    ", @$val );
+                    push( @sql, '    ', @$sql );
+                    push( @bv, @$bv );
                 }
                 elsif ( $key =~ m/^order_by/i ) {
-                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
+                    my ( $sql, $bv ) = _ljoin( ",\n    ", @$val );
+                    push( @sql, '    ', @$sql );
+                    push( @bv, @$bv );
                 }
                 else {
-                    my ( $s, $b ) = _get_bv(@$val);
-                    push( @sql, '    ', _ljoin( ' ', @$s ) );
-                    push( @bind, @$b );
+                    my ( $sql, $bv ) = _ljoin( undef, @$val );
+                    push( @sql, '    ', @$sql );
+                    push( @bv, @$bv );
                 }
             }
             elsif ( ref $val eq 'HASH' ) {
                 if ($VALUES) {
-                    push( @sql, '    (' );
                     my ( @columns, @values );
                     while ( my ( $k, $v ) = each %$val ) {
                         push( @columns, $k );
                         push( @values,  $v );
                     }
-                    push( @sql, join( ', ', @columns ) );
-                    push( @sql, ")\nVALUES\n    (" );
 
-                    _make_bv( \@values );
+                    my ( $sql, $bv ) = _ljoin( ', ', _make_bv(@values) );
 
-                    push( @sql, _ljoin( ', ', map { '?' } @values ) );
-                    push( @bind, @values );
-                    push( @sql,  ')' );
+                    push( @sql, '    (', join( ', ', @columns ), ")\n" );
+                    push( @sql, "VALUES\n    (", @$sql, ')' );
+                    push( @bv, @$bv );
                 }
 
           #                elsif ( $key =~ m/^select/i ) {
@@ -120,7 +130,7 @@ sub _query {
           #                else {
           #                    my ( $s, $b ) = _get_bv(@$val);
           #                    push( @sql, '    ', _ljoin( ' ', @$s ) );
-          #                    push( @bind, @$b );
+          #                    push( @bv, @$b );
           #                }
             }
             else {
@@ -132,7 +142,7 @@ sub _query {
     };
 
     Carp::croak "Bad Query: $@" if $@;
-    return \@sql, \@bind;
+    return \@sql, \@bv;
 }
 
 sub sql_case {

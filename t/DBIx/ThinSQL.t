@@ -51,18 +51,28 @@ subtest "DBIx::ThinSQL::st", sub {
 subtest "DBIx::ThinSQL", sub {
 
     # check exported functions
-    isa_ok bv( 1, 2 ), 'DBIx::ThinSQL::_bv';
-    isa_ok qv(1), 'DBIx::ThinSQL::_qv';
-    is OR,  ' OR ',  'OR exported';
-    is AND, ' AND ', 'AND exported';
+    isa_ok \&bv,  'CODE', 'export bv';
+    isa_ok \&qv,  'CODE', 'export qv';
+    isa_ok \&AND, 'CODE', 'export AND';
+    isa_ok \&OR,  'CODE', 'export OR';
 
-    # This one is private, but I had to test it while writing ...
-    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a/) ], [], 'ljoin nothing';
+    # _ljoin
+    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a/) ], [ [], [], ], 'ljoin nothing';
 
-    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1/) ], [qw/1/], 'ljoin one';
+    my ( $s, $b ) = DBIx::ThinSQL::_ljoin(qw/a 1/);
 
-    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1 2 3 4/) ], [qw/1 a 2 a 3 a 4/],
+    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1/) ], [ [qw/1/], [], ], 'ljoin one';
+
+    is_deeply [ DBIx::ThinSQL::_ljoin(qw/a 1 2 3 4/) ],
+      [ [qw/1 a 2 a 3 a 4/], [], ],
       'ljoin many';
+
+    my $bv = bv(1);
+    my $qv = qv(1);
+
+    is_deeply [ DBIx::ThinSQL::_ljoin( qw/a 1 /, $bv, $qv ) ],
+      [ [ qw/1 a ? a/, $qv ], [$bv], ],
+      'ljoin many with bv and qv';
 
     # now let's make a database check our syntax
     run_in_tempdir {
