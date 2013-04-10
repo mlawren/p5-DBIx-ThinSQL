@@ -2,9 +2,9 @@ package DBIx::ThinSQL;
 use strict;
 use warnings;
 use DBI;
-use Carp ();
 use Exporter::Tidy
-  default => [qw/ bv qv qi OR AND /],
+  default => [qw/ bv qv qi /],
+  other   => [qw/ OR AND /],
   sql     => [
     qw/
       func
@@ -68,7 +68,6 @@ use Exporter::Tidy
     sum      => sub { DBIx::ThinSQL::_expr->func( 'sum',      ', ', @_ ) },
     upper    => sub { DBIx::ThinSQL::_expr->func( 'upper',    ', ', @_ ) },
   };
-use Log::Any qw/$log/;
 
 our @ISA     = 'DBI';
 our $VERSION = '0.0.1';
@@ -76,6 +75,8 @@ our $VERSION = '0.0.1';
 package DBIx::ThinSQL::db;
 use strict;
 use warnings;
+use Carp ();
+use Log::Any qw/$log/;
 
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
@@ -202,9 +203,8 @@ sub xprepare {
 
     my $bv_count = scalar @$bindref;
 
-    $DBIx::ThinSQL::log->debug(
-            "/* xprepare() with bind: $bv_count quote: $qv_count "
-          . "ident: $qi_count */\n"
+    $log->debug( "/* xprepare() with bv: $bv_count qv: $qv_count "
+          . "qi: $qi_count */\n"
           . $sql );
 
     my $sth = eval {

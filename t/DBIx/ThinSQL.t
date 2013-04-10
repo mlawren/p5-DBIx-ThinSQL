@@ -345,7 +345,7 @@ subtest "DBIx::ThinSQL", sub {
                 select => [qw/name phone/],
                 from   => 'users',
                 where =>
-                  [ 'phone = ', bv('phone3'), OR, 'name = ', qv('name2') ],
+                  [ 'phone = ', bv('phone3'), 'OR name = ', qv('name2') ],
                 order_by => [ 'phone', 'name' ],
             );
 
