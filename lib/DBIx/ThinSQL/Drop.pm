@@ -11,7 +11,7 @@ sub drop_everything {
     my $self      = shift;
     my $driver    = $self->{Driver}->{Name};
     my $share_dir = $Test::DBIx::ThinSQL::SHARE_DIR
-      || dist_dir('SQL-DB');
+      || dist_dir('DBIx-ThinSQL');
 
     my $dir = path( $share_dir, 'Drop', $driver );
     if ( !-d $dir ) {
