@@ -194,7 +194,10 @@ sub _deploy {
     $log->debug( 'Current Change ID:',   $latest_change_id );
     $log->debug( 'Requested Change ID:', scalar @$ref );
 
-    die "Requested Change ID is in the past!" if @$ref < $latest_change_id;
+    die "Requested Change ID("
+      . ( scalar @$ref )
+      . ") is less than current: $latest_change_id"
+      if @$ref < $latest_change_id;
 
     my $count = 0;
     foreach my $cmd (@$ref) {
