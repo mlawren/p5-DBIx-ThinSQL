@@ -122,6 +122,14 @@ subtest "DBIx::ThinSQL", sub {
         @sql = cast( 'col AS', 'integer' )->as('icol')->tokens;
         like "@sql", qr/CAST \s+ \( \s+ col \s AS \s+ integer \s+ \)
             \s+ AS \s+ DBIx::ThinSQL::_qi.* /sx, 'CAST';
+
+        my $concat = concat( 1, $qv, $bv );
+        isa_ok $concat, 'DBIx::ThinSQL::_expr';
+
+        @sql = $concat->tokens;
+        like "@sql", qr/1 \s+ || \s+ DBIx::ThinSQL::_qv.* \s+
+            || \s+ DBIx::ThinSQL::_bv.*\s+$/sx, 'CONCAT';
+
     };
 
     # now let's make a database check our syntax
