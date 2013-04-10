@@ -156,7 +156,7 @@ sub _setup_deploy {
         $self->run_dir( $share->child( 'Deploy', $driver ) );
     }
     else {
-        $self->run_dir( dist_dir('DBIx-ThinSQL'), 'Deploy', $driver );
+        $self->run_dir( path( dist_dir('DBIx-ThinSQL'), 'Deploy', $driver ) );
     }
 
     return;
