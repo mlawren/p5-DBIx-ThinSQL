@@ -93,14 +93,16 @@ sub _run_cmds {
     my $self = shift;
     my $ref  = shift;
 
+    local $self->{ShowErrorStatement} = 1;
+    local $self->{RaiseError}         = 1;
+
     $log->debug( 'running ' . scalar @$ref . ' statements' );
     my $i = 1;
 
     foreach my $cmd (@$ref) {
         if ( exists $cmd->{sql} ) {
             $log->debug( "-- _run_cmd $i\n" . $cmd->{sql} );
-            eval { $self->do( $cmd->{sql} ) };
-            die $cmd->{sql} . "\n" . $@ if $@;
+            $self->do( $cmd->{sql} );
         }
         elsif ( exists $cmd->{pl} ) {
             $log->debug( "-- _run_cmd\n" . $cmd->{pl} );
@@ -178,6 +180,8 @@ sub _deploy {
     my $app  = shift || 'default';
 
     confess 'deploy(ARRAYREF)' unless ref $ref eq 'ARRAY';
+    local $self->{ShowErrorStatement} = 1;
+    local $self->{RaiseError}         = 1;
 
     my @current =
       $self->selectrow_array( 'SELECT COUNT(app) from _deploy WHERE app=?',
@@ -210,8 +214,7 @@ sub _deploy {
 
         if ( exists $cmd->{sql} ) {
             $log->debug( "-- change #$count\n" . $cmd->{sql} );
-            eval { $self->do( $cmd->{sql} ) };
-            die $cmd->{sql} . "\n" . $@ if $@;
+            $self->do( $cmd->{sql} );
             $self->do( "
 UPDATE 
     _deploy
