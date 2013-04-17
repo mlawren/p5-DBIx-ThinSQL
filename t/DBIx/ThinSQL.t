@@ -234,6 +234,7 @@ subtest "DBIx::ThinSQL", sub {
             $res = $db->xarrays(
                 select   => [qw/name phone/],
                 from     => 'users',
+                group_by => [qw/name phone/],
                 order_by => 'name asc',
             );
 

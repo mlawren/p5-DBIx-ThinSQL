@@ -139,7 +139,7 @@ sub _query {
                         ')'
                     );
                 }
-                elsif ( $key =~ m/^((select)|(order_by))/i ) {
+                elsif ( $key =~ m/^((select)|(order_by)|(group_by))/i ) {
                     push( @tokens,
                         '    ', DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
                 }
