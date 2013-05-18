@@ -227,6 +227,8 @@ sub xprepare {
           . $sql );
 
     my $sth = eval {
+
+        # TODO these locals have no effect?
         local $self->{RaiseError}         = 1;
         local $self->{PrintError}         = 0;
         local $self->{ShowErrorStatement} = 1;
@@ -290,6 +292,96 @@ sub xhashes {
     my $sth = $self->xprepare(@_);
     $sth->execute;
     return $sth->hashes;
+}
+
+# Can't use 'local' to managed txn count here because $self is a tied hash?
+# Also can't use ||=.
+sub txn {
+    my $self      = shift;
+    my $subref    = shift;
+    my $wantarray = wantarray;
+    my $txn       = $self->{private_DBIx_ThinSQL_txn}++;
+    my $driver    = $self->{private_DBIx_ThinSQL_driver};
+
+    $driver ||= $self->{private_DBIx_ThinSQL_driver} = do {
+        my $class = 'DBIx::ThinSQL::Driver::' . $self->{Driver}->{Name};
+        eval { $class->new } || DBIx::ThinSQL::Driver->new;
+    };
+
+    my $current;
+    if ( !$txn ) {
+        $current = {
+            RaiseError         => $self->{RaiseError},
+            ShowErrorStatement => $self->{ShowErrorStatement},
+        };
+
+    }
+
+    $self->{RaiseError} = 1 unless exists $self->{HandleError};
+    $self->{ShowErrorStatement} = 1;
+
+    my @result;
+    my $result;
+
+    if ( !$txn ) {
+        $log->debug('BEGIN');
+        $self->begin_work;
+    }
+    else {
+        $log->debug( 'SAVEPOINT ' . $txn );
+        $driver->savepoint( $self, 'txn' . $txn );
+    }
+
+    eval {
+
+        if ($wantarray) {
+            @result = $subref->();
+        }
+        else {
+            $result = $subref->();
+        }
+
+        if ( !$txn ) {
+            $log->debug('COMMIT');
+            $self->commit;
+        }
+        else {
+            $log->debug( 'RELEASE ' . $txn );
+            $driver->release( $self, 'txn' . $txn );
+        }
+
+    };
+    my $error = $@;
+
+    $self->{private_DBIx_ThinSQL_txn} = $txn;
+    if ( !$txn ) {
+        $self->{RaiseError}         = $current->{RaiseError};
+        $self->{ShowErrorStatement} = $current->{ShowErrorStatement};
+    }
+
+    if ($error) {
+
+        eval {
+            if ( !$txn )
+            {
+                $log->debug('ROLLBACK');
+                $self->rollback;
+            }
+            else {
+                $log->debug( 'ROLLBACK TO ' . $txn );
+                $driver->rollback_to( $self, 'txn' . $txn );
+            }
+        };
+
+        Carp::croak(
+            $error . "\nAdditionally, an error occured during
+                  rollback:\n$@"
+        ) if $@;
+
+        Carp::croak($error);
+    }
+
+    return $wantarray ? @result : $result;
 }
 
 package DBIx::ThinSQL::st;
@@ -434,6 +526,78 @@ sub as {
 sub tokens {
     my $self = shift;
     return @$self;
+}
+
+package DBIx::ThinSQL::Driver;
+use strict;
+use warnings;
+
+sub new {
+    my $class = shift;
+    return bless {}, $class;
+}
+
+sub savepoint {
+}
+
+sub release {
+}
+
+sub rollback_to {
+}
+
+package DBIx::ThinSQL::Driver::SQLite;
+use strict;
+use warnings;
+
+our @ISA = ('DBIx::ThinSQL::Driver');
+
+sub savepoint {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->do( 'SAVEPOINT ' . $name );
+}
+
+sub release {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->do( 'RELEASE ' . $name );
+}
+
+sub rollback_to {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->do( 'ROLLBACK TO ' . $name );
+}
+
+package DBIx::ThinSQL::Driver::Pg;
+use strict;
+use warnings;
+
+our @ISA = ('DBIx::ThinSQL::Driver');
+
+sub savepoint {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->pg_savepoint($name);
+}
+
+sub release {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->pg_release($name);
+}
+
+sub rollback_to {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->pg_rollback_to($name);
 }
 
 1;

@@ -1,9 +1,10 @@
 use strict;
 use warnings;
 use lib 't/lib';
-use Test::More;
 use DBIx::ThinSQL ':default', ':sql';
 use Test::DBIx::ThinSQL qw/run_in_tempdir/;
+use Test::Fatal qw/exception/;
+use Test::More;
 
 subtest "DBIx::ThinSQL::_bv", sub {
     my $bv = DBIx::ThinSQL::_bv->new( 1, 2 );
@@ -161,7 +162,7 @@ subtest "DBIx::ThinSQL", sub {
 
         isa_ok $db, 'DBIx::ThinSQL::db';
 
-        $db->do("CREATE TABLE users ( name TEXT, phone TEXT )");
+        $db->do("CREATE TABLE users ( name TEXT PRIMARY KEY, phone TEXT )");
         my $res;
         my @res;
 
@@ -356,6 +357,91 @@ subtest "DBIx::ThinSQL", sub {
             values      => { name => 'name4', phone => 'phone4' },
         );
         is $res, 1, 'insert using hashref';
+
+        $db->do('DELETE FROM users');
+
+        subtest 'txn', sub {
+            $res = undef;
+            ok $db->{AutoCommit}, 'have autocommit';
+
+            $db->txn(
+                sub {
+                    ok !$db->{AutoCommit}, 'no autocommit in txn';
+                    $res = 1;
+                }
+            );
+
+            ok $db->{AutoCommit}, 'have autocommit';
+            is $res, 1, 'sub ran in txn()';
+
+            $res = undef;
+            like exception {
+                $db->txn(
+                    sub {
+                        die 'WTF';
+                    }
+                );
+                die "WRONG";
+            }, qr/WTF/, 'correct exception propagated';
+
+            is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
+
+            $res = $db->txn(
+                sub {
+                    $db->txn(
+                        sub {
+                            $db->xdo(
+                                insert_into => 'users',
+                                values =>
+                                  { name => 'name1', phone => 'phone1' },
+                            );
+
+                            $res = $db->xarrays(
+                                select => [qw/name phone/],
+                                from   => 'users',
+                            );
+                        }
+                    );
+                }
+            );
+
+            is_deeply $res, [ [qw/name1 phone1/] ], 'nested txn';
+            is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
+
+            @res = $db->txn(
+                sub {
+                    eval {
+                        $db->txn(
+                            sub {
+                                $db->xdo(
+                                    insert_into => 'users',
+                                    values =>
+                                      { name => 'name1', phone => 'phone1' },
+                                );
+                            }
+                        );
+                    };
+
+                    ok $@, 'insert duplicate';
+
+                    $db->xdo(
+                        insert_into => 'users',
+                        values      => { name => 'name2', phone => 'phone2' },
+                    );
+
+                    return $db->xarrays(
+                        select   => [qw/name phone/],
+                        from     => 'users',
+                        order_by => 'name',
+                    );
+                }
+            );
+
+            is_deeply \@res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
+              'nested txn/svp';
+            is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
+
+        };
 
         $db->disconnect;
 
