@@ -144,7 +144,8 @@ sub _query {
                         '    ', DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
                 }
                 else {
-                    push( @tokens, DBIx::ThinSQL::_ejoin( undef, @$val ) );
+                    push( @tokens,
+                        '    ', DBIx::ThinSQL::_ejoin( undef, @$val ) );
                 }
             }
             elsif ( ref $val eq 'HASH' ) {
@@ -161,21 +162,22 @@ sub _query {
                         ")\nVALUES\n    (",
                         DBIx::ThinSQL::_ejoin( ', ', @values ), ')' );
                 }
-
-               #                elsif ( $key =~ m/^select/i ) {
-               #                    push( @tokens, '    ',
-               #                    DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
-               #                }
-               #                elsif ( $key =~ m/^order_by/i ) {
-               #                    push( @tokens, '    ',
-               #                    DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
-               #                }
-               #                else {
-               #                    my ( $s, $b ) = _get_bv(@$val);
-               #                    push( @tokens, '    ',
-               #                    DBIx::ThinSQL::_ejoin( ' ', @$s ) );
-               #                    push( @bv, @$b );
-               #                }
+                else {
+                    my ( $i, @columns, @values );
+                    while ( my ( $k, $v ) = each %$val ) {
+                        push( @columns, $k );                            # qi()?
+                        push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                        $i++;
+                    }
+                    push( @tokens, '    ' );
+                    while ( $i-- ) {
+                        push( @tokens,
+                            shift @columns,
+                            ' = ', shift @values,
+                            ' AND ' );
+                    }
+                    pop @tokens;
+                }
             }
             else {
                 push( @tokens, '    ' . $val );
