@@ -60,7 +60,7 @@ use Exporter::Tidy
     replace => sub { func( 'replace', ', ', @_ ) },
     rtrim   => sub { func( 'rtrim',   ', ', @_ ) },
     substr  => sub { func( 'substr',  ', ', @_ ) },
-    sum     => sub { func( 'sum',     ', ', @_ ) },
+    sum     => sub { func( 'sum',     '',   @_ ) },
     upper   => sub { func( 'upper',   ', ', @_ ) },
   };
 
