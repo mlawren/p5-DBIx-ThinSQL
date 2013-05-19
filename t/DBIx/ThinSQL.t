@@ -408,6 +408,7 @@ subtest "DBIx::ThinSQL", sub {
             is_deeply $res, [ [qw/name1 phone1/] ], 'nested txn';
             is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
 
+            my $err;
             @res = $db->txn(
                 sub {
                     eval {
@@ -422,7 +423,7 @@ subtest "DBIx::ThinSQL", sub {
                         );
                     };
 
-                    ok $@, 'insert duplicate';
+                    $err = $@;
 
                     $db->xdo(
                         insert_into => 'users',
@@ -437,6 +438,7 @@ subtest "DBIx::ThinSQL", sub {
                 }
             );
 
+            ok $err, 'know that duplicate insert failed';
             is_deeply \@res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
               'nested txn/svp';
             is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
