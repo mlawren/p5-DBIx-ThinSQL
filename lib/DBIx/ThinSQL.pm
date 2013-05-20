@@ -2,168 +2,247 @@ package DBIx::ThinSQL;
 use strict;
 use warnings;
 use DBI;
-use Carp ();
-use Exporter::Tidy all => [qw/ bv qv OR AND /];
-use Log::Any qw/$log/;
+use Exporter::Tidy
+  default => [qw/ bv qv qi /],
+  other   => [qw/ func OR AND /],
+  sql     => [
+    qw/
+      case
+      cast
+      coalesce
+      concat
+      count
+      exists
+      hex
+      length
+      lower
+      ltrim
+      max
+      min
+      replace
+      rtrim
+      substr
+      sum
+      upper
+
+      /
+  ],
+  _map => {
+    bv   => sub { DBIx::ThinSQL::_bv->new(@_) },
+    qv   => sub { DBIx::ThinSQL::_qv->new(@_) },
+    qi   => sub { DBIx::ThinSQL::_qi->new(@_) },
+    OR   => sub { ' OR ' },
+    AND  => sub { ' AND ' },
+    cast => sub { func( 'cast', ' ', @_ ) },
+    case => sub {
+        my @tokens;
+
+        shift @_;
+        unshift @_, 'case when';
+
+        while ( my ( $key, $val ) = splice( @_, 0, 2 ) ) {
+            push( @tokens, _ejoin( "\n        ", uc($key), $val ), "\n    " );
+        }
+        push( @tokens, 'END' );
+
+        return DBIx::ThinSQL::_expr->new(@tokens);
+    },
+    coalesce => sub { func( 'coalesce', ', ', @_ ) },
+    concat => sub { DBIx::ThinSQL::_expr->new( _ejoin( ' || ', @_ ) ) },
+    count   => sub { func( 'count',   ', ', @_ ) },
+    exists  => sub { func( 'exists',  ', ', @_ ) },
+    hex     => sub { func( 'hex',     ', ', @_ ) },
+    length  => sub { func( 'length',  ', ', @_ ) },
+    lower   => sub { func( 'lower',   ', ', @_ ) },
+    ltrim   => sub { func( 'ltrim',   ', ', @_ ) },
+    max     => sub { func( 'max',     ', ', @_ ) },
+    min     => sub { func( 'min',     ', ', @_ ) },
+    replace => sub { func( 'replace', ', ', @_ ) },
+    rtrim   => sub { func( 'rtrim',   ', ', @_ ) },
+    substr  => sub { func( 'substr',  ', ', @_ ) },
+    sum     => sub { func( 'sum',     '',   @_ ) },
+    upper   => sub { func( 'upper',   ', ', @_ ) },
+  };
 
 our @ISA     = 'DBI';
-our @VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
-sub _get_bv {
-    my @sql;
-    my @bv;
-    my $space = '';
-
-    foreach my $token (@_) {
-        if ( ref $token eq 'DBIx::ThinSQL::_bv' ) {
-            push( @sql, '?' );
-            push( @bv,  $token );
-        }
-        else {
-            push( @sql, $token );
-        }
-    }
-    return \@sql, \@bv;
-}
-
-sub _make_bv {
-    my $ref = shift;
-
-    foreach my $i ( 0 .. $#{$ref} ) {
-        $ref->[$i] = DBIx::ThinSQL::_bv->new( $ref->[$i] )
-          unless ( ref $ref->[$i] ) =~ m/^DBIx::ThinSQL::_(b|q)v$/;
-    }
-    return;
-}
-
-sub _ljoin {
-    my $token = shift;
+sub _ejoin {
+    my $joiner = shift;
     return unless @_;
 
-    my $last = pop @_;
-    return $last unless @_;
+    my @tokens;
+    my $last = $#_;
 
-    return ( map { $_ => $token } @_ ), $last;
-}
-
-sub _query {
-
-    #    use Data::Dumper;
-    #    warn Dumper \@_;
-    my @sql;
-    my @bind;
-
-    eval {
-        while ( my ( $key, $val ) = splice( @_, 0, 2 ) )
-        {
-            ( my $tmp = uc($key) ) =~ s/_/ /g;
-            push( @sql, $tmp );
-            push( @sql, "\n" ) unless lc $key eq 'values';
-
-            next unless defined $val;
-
-            my $brackets;
-            $brackets++ if lc $key eq 'values';
-
-            push( @sql, '(' ) if $brackets;
-
-            if ( ref $val eq 'DBIx::ThinSQL::_bv' ) {
-
-                push( @bind, $val );
-
-                # add to @bind
-                push( @sql, '?' );
-            }
-            elsif ( ref $val eq 'ARRAY' ) {
-                if ( $key =~ m/^values$/i ) {
-                    _make_bv($val);
-                    push( @sql, _ljoin( ', ', map { '?' } 0 .. $#{$val} ) );
-                    push( @bind, @$val );
-                }
-                elsif ( $key =~ m/^select/i ) {
-                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
-                }
-                elsif ( $key =~ m/^order_by/i ) {
-                    push( @sql, '    ', _ljoin( ",\n    ", @$val ) );
-                }
-                else {
-                    my ( $s, $b ) = _get_bv(@$val);
-                    push( @sql, '    ', _ljoin( ' ', @$s ) );
-                    push( @bind, @$b );
-                }
-            }
-            else {
-                push( @sql, '    ' . $val );
-            }
-
-            push( @sql, ')' ) if $brackets;
-            push( @sql, "\n" );
+    my $i = 0;
+    foreach my $item (@_) {
+        if ( ref $item eq 'ARRAY' ) {    # CASE WHEN ... in a SELECT?
+            push( @tokens, _ejoin( undef, @$item ) );
         }
-    };
+        elsif ( ref $item eq 'DBIx::ThinSQL::_expr' ) {
+            push( @tokens, $item->tokens );
+        }
+        else {
+            push( @tokens, $item );
+        }
 
-    Carp::croak "Bad Query: $@" if $@;
-    return \@sql, \@bind;
+        push( @tokens, $joiner ) unless !defined $joiner or $i == $last;
+        $i++;
+    }
+
+    return @tokens;
 }
 
-sub sql_case {
-    _query( 'case_' . shift, map { '    ' . $_ } @_, 'END' );
-}
+sub func {
+    my $func   = uc shift;
+    my $joiner = shift;
 
-sub bv  { DBIx::ThinSQL::_bv->new(@_); }
-sub qv  { DBIx::ThinSQL::_qv->new(@_); }
-sub OR  { ' OR ' }
-sub AND { ' AND ' }
+    return DBIx::ThinSQL::_expr->new( $func, '(', _ejoin( $joiner, @_ ), ')' );
+}
 
 package DBIx::ThinSQL::db;
 use strict;
 use warnings;
+use Carp ();
+use Log::Any qw/$log/;
 
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
 
-# For testing - see t/01
-sub _private_dbix_sqlx_sponge {
-    my $self = shift;
-    $self->{private_dbix_sqlx_sponge} = shift;
+sub _query {
+
+    # use Data::Dumper;
+    # warn Dumper \@_;
+    my @tokens;
+
+    eval {
+        while ( my ( $key, $val ) = splice( @_, 0, 2 ) )
+        {
+
+            ( my $tmp = uc($key) ) =~ s/_/ /g;
+            my $VALUES = $tmp eq 'VALUES';
+            if ( !$VALUES ) {
+                push( @tokens, $tmp );
+                push( @tokens, "\n" );
+            }
+
+            next unless defined $val;
+
+            if ( ref $val eq 'ARRAY' ) {
+                if ($VALUES) {
+                    push(
+                        @tokens,
+                        "VALUES\n    (",
+                        DBIx::ThinSQL::_ejoin(
+                            ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val
+                        ),
+                        ')'
+                    );
+                }
+                elsif ( $key =~ m/^((select)|(order_by)|(group_by))/i ) {
+                    push( @tokens,
+                        '    ', DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
+                }
+                else {
+                    push( @tokens,
+                        '    ', DBIx::ThinSQL::_ejoin( undef, @$val ) );
+                }
+            }
+            elsif ( ref $val eq 'HASH' ) {
+                if ($VALUES) {
+                    my ( @columns, @values );
+                    while ( my ( $k, $v ) = each %$val ) {
+                        push( @columns, $k );                            # qi()?
+                        push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                    }
+
+                    push( @tokens,
+                        '    (',
+                        join( ', ', @columns ),
+                        ")\nVALUES\n    (",
+                        DBIx::ThinSQL::_ejoin( ', ', @values ), ')' );
+                }
+                else {
+                    my ( $i, @columns, @values );
+                    while ( my ( $k, $v ) = each %$val ) {
+                        push( @columns, $k );                            # qi()?
+                        push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                        $i++;
+                    }
+                    push( @tokens, '    ' );
+                    while ( $i-- ) {
+                        push( @tokens,
+                            shift @columns,
+                            ' = ', shift @values,
+                            ' AND ' );
+                    }
+                    pop @tokens;
+                }
+            }
+            else {
+                push( @tokens, '    ' . $val );
+            }
+
+            push( @tokens, "\n" );
+        }
+    };
+
+    Carp::croak "Bad Query: $@" if $@;
+    return @tokens;
 }
 
 sub xprepare {
-    my $self = shift;
-
-    my ( $sqlref, $bindref ) = DBIx::ThinSQL::_query(@_);
+    my $self     = shift;
+    my $bv_count = 0;
     my $qv_count = 0;
+    my $qi_count = 0;
+
+    my @bv;
 
     my $sql = join(
         '',
         map {
-            if ( ref $_ eq 'DBIx::ThinSQL::_qv' )
+            if ( ref $_ eq 'DBIx::ThinSQL::_bv' )
             {
+                $bv_count++;
+                push( @bv, $_ );
+                '?';
+            }
+            elsif ( ref $_ eq 'DBIx::ThinSQL::_qv' ) {
                 $qv_count++;
                 $self->quote( $_->for_quote );
+            }
+            elsif ( ref $_ eq 'DBIx::ThinSQL::_qi' ) {
+                $qi_count++;
+                $self->quote_identifier( $_->val );
             }
             else {
                 $_;
             }
-        } @$sqlref
+        } _query(@_)
     );
 
-    my $bv_count = 0;
-    my $sth      = eval {
+    $log->debug( "/* xprepare() with bv: $bv_count qv: $qv_count "
+          . "qi: $qi_count */\n"
+          . $sql );
+
+    my $sth = eval {
+
+        # TODO these locals have no effect?
+        local $self->{RaiseError}         = 1;
+        local $self->{PrintError}         = 0;
+        local $self->{ShowErrorStatement} = 1;
         my $sth = $self->prepare($sql);
 
-        foreach my $bv (@$bindref) {
-            $bv_count++;
-            $sth->bind_param( $bv_count, $bv->for_bind_param );
+        my $i = 1;
+        foreach my $bv (@bv) {
+            $sth->bind_param( $i++, $bv->for_bind_param );
         }
 
         $sth;
     };
 
-    Carp::croak( $@ . "Query (bind: $bv_count quote: $qv_count) was:\n" . $sql )
-      if $@;
-
-    $DBIx::ThinSQL::log->debug(
-        "/* xprepare() with bind: $bv_count quote: $qv_count */\n" . $sql );
+    Carp::croak($@) if $@;
 
     return $sth;
 }
@@ -179,10 +258,12 @@ sub xarray {
 
     my $sth = $self->xprepare(@_);
     $sth->execute;
-    my $ref = $sth->array;
+    my @ref = $sth->array;
     $sth->finish;
 
-    return $ref;
+    return unless @ref;
+    return @ref if wantarray;
+    return \@ref;
 }
 
 sub xarrays {
@@ -213,138 +294,94 @@ sub xhashes {
     return $sth->hashes;
 }
 
-sub insert {
-    my $self       = shift;
-    my $str_into   = shift;
-    my $table      = shift;
-    my $str_values = shift;
-    my $values     = shift;
+# Can't use 'local' to managed txn count here because $self is a tied hash?
+# Also can't use ||=.
+sub txn {
+    my $self      = shift;
+    my $subref    = shift;
+    my $wantarray = wantarray;
+    my $txn       = $self->{private_DBIx_ThinSQL_txn}++;
+    my $driver    = $self->{private_DBIx_ThinSQL_driver};
 
-    unless ($str_into eq 'into'
-        and $str_values eq 'values'
-        and ( eval { $values->isa('HASH') } ) )
-    {
-        Carp::croak 'usage: insert(into => $table, values => $hashref)';
+    $driver ||= $self->{private_DBIx_ThinSQL_driver} = do {
+        my $class = 'DBIx::ThinSQL::Driver::' . $self->{Driver}->{Name};
+        eval { $class->new } || DBIx::ThinSQL::Driver->new;
+    };
+
+    my $current;
+    if ( !$txn ) {
+        $current = {
+            RaiseError         => $self->{RaiseError},
+            ShowErrorStatement => $self->{ShowErrorStatement},
+        };
+
     }
 
-    my $urow = $self->urow($table);
+    $self->{RaiseError} = 1 unless exists $self->{HandleError};
+    $self->{ShowErrorStatement} = 1;
 
-    my @cols    = sort grep { $urow->can($_) } keys %$values;
-    my @invalid = sort grep { !$urow->can($_) } keys %$values;
-    my @vals = map { _bval( $values->{$_}, $urow->$_->_type ) } @cols;
+    my @result;
+    my $result;
 
-    $DBIx::ThinSQL::log->debug(
-        "columns not in table '$table': @invalid\n    at", caller )
-      if @invalid;
-    Carp::croak 'insert_into requires columns/values' unless @cols;
-
-    return 0 + $self->do(
-        insert_into => sql_table( $table, @cols ),
-        sql_values(@vals),
-    );
-}
-
-# $db->update('purchases',
-#     set   => {pid => 2},
-#     where => {cid => 1},
-# );
-sub update {
-    my $self  = shift;
-    my $table = shift;
-    shift;
-    my $set = shift;
-    shift;
-    my $where = shift;
-
-    my $urow = $self->urow($table);
-    my @updates = map { $urow->$_( $set->{$_} ) }
-      grep { $urow->can($_) and !exists $where->{$_} } keys %$set;
-
-    unless (@updates) {
-        $DBIx::ThinSQL::log->debug( "Nothing to update for table:", $table );
-        return 0;
+    if ( !$txn ) {
+        $log->debug('BEGIN');
+        $self->begin_work;
+    }
+    else {
+        $log->debug( 'SAVEPOINT ' . $txn );
+        $driver->savepoint( $self, 'txn' . $txn );
     }
 
-    my $expr;
-    if ( my @keys = keys %$where ) {
-        $expr =
-          _expr_join( ' AND ',
-            map { $urow->$_ == $where->{$_} } grep { $urow->can($_) } @keys );
+    eval {
+
+        if ($wantarray) {
+            @result = $subref->();
+        }
+        else {
+            $result = $subref->();
+        }
+
+        if ( !$txn ) {
+            $log->debug('COMMIT');
+            $self->commit;
+        }
+        else {
+            $log->debug( 'RELEASE ' . $txn );
+            $driver->release( $self, 'txn' . $txn );
+        }
+
+    };
+    my $error = $@;
+
+    $self->{private_DBIx_ThinSQL_txn} = $txn;
+    if ( !$txn ) {
+        $self->{RaiseError}         = $current->{RaiseError};
+        $self->{ShowErrorStatement} = $current->{ShowErrorStatement};
     }
 
-    return 0 + $self->do(
-        update => $urow,
-        set    => \@updates,
-        $expr ? ( where => $expr ) : (),
-    );
-}
+    if ($error) {
 
-# $db->delete(
-#    from => 'purchases',
-#    where => {cid => 1},
-# );
+        eval {
+            if ( !$txn )
+            {
+                $log->debug('ROLLBACK');
+                $self->rollback;
+            }
+            else {
+                $log->debug( 'ROLLBACK TO ' . $txn );
+                $driver->rollback_to( $self, 'txn' . $txn );
+            }
+        };
 
-sub delete {
-    my $self = shift;
-    shift;    # from
-    my $table = shift;
-    shift;    # where
-    my $where = shift;
+        Carp::croak(
+            $error . "\nAdditionally, an error occured during
+                  rollback:\n$@"
+        ) if $@;
 
-    my @expr;
-    my @keys = keys %$where;
-
-    while (@keys) {
-        push( @expr, 'where' ) unless @expr;
-
-        my $key = shift @keys;
-
-        push( @expr,
-            $self->quote_identifier($key),
-            ' = ', qv( $where->{$key} ) );
-
-        push( @expr, ' AND ' ) if @keys;
+        Carp::croak($error);
     }
 
-    return $self->do(
-        delete_from => $table,
-        @expr,
-    );
-}
-
-# my @objs = $db->select( ['pid','label],
-#     from => 'customers',
-#     where => {cid => 1},
-# );
-sub select {
-    my $self = shift;
-    my $list = shift;
-    shift;
-    my $table = shift;
-    shift;
-    my $where = shift;
-
-    my $srow = $self->srow($table);
-    my @columns = map { $srow->$_ } @$list;
-
-    @columns || Carp::croak 'select requires columns';
-
-    my $expr;
-    if ( my @keys = keys %$where ) {
-        $expr = _expr_join( ' AND ', map { $srow->$_ == $where->{$_} } @keys );
-    }
-
-    return $self->fetch(
-        select => \@columns,
-        from   => $srow,
-        $expr ? ( where => $expr ) : (),
-    ) if wantarray;
-
-    return $self->fetch1(
-        select => \@columns,
-        from   => $srow,
-        $expr ? ( where => $expr ) : (),
-    );
+    return $wantarray ? @result : $result;
 }
 
 package DBIx::ThinSQL::st;
@@ -357,7 +394,8 @@ sub array {
     my $self = shift;
     return unless $self->{Active};
 
-    my $ref = $self->fetchrow_arrayref;
+    my $ref = $self->fetchrow_arrayref || return;
+
     return @$ref if wantarray;
     return $ref;
 }
@@ -366,7 +404,7 @@ sub arrays {
     my $self = shift;
     return unless $self->{Active};
 
-    my $all = $self->fetchall_arrayref;
+    my $all = $self->fetchall_arrayref || return;
 
     return @$all if wantarray;
     return $all;
@@ -400,6 +438,7 @@ use warnings;
 
 sub new {
     my $class = shift;
+    return $_[0] if ( ref $_[0] ) =~ m/^DBIx::ThinSQL::_/;
     return bless [@_], $class;
 }
 
@@ -427,6 +466,7 @@ use warnings;
 
 sub new {
     my $class = shift;
+    return $_[0] if ( ref $_[0] ) =~ m/^DBIx::ThinSQL::_/;
     return bless [@_], $class;
 }
 
@@ -446,6 +486,118 @@ sub for_quote {
 
     # value
     return $self->[0];
+}
+
+package DBIx::ThinSQL::_qi;
+use strict;
+use warnings;
+
+sub new {
+    my $class = shift;
+    return $_[0] if ( ref $_[0] ) =~ m/^DBIx::ThinSQL::_/;
+
+    my $id = shift;
+    return bless \$id, $class;
+}
+
+sub val {
+    my $self = shift;
+    return $$self;
+}
+
+package DBIx::ThinSQL::_expr;
+use strict;
+use warnings;
+
+sub new {
+    my $class = shift;
+    return bless [@_], $class;
+}
+
+# and yet another kind of constructor
+sub as {
+    my $self  = shift;
+    my $value = shift;
+
+    push( @$self, ' AS ', DBIx::ThinSQL::_qi->new($value) );
+    return $self;
+}
+
+sub tokens {
+    my $self = shift;
+    return @$self;
+}
+
+package DBIx::ThinSQL::Driver;
+use strict;
+use warnings;
+
+sub new {
+    my $class = shift;
+    return bless {}, $class;
+}
+
+sub savepoint {
+}
+
+sub release {
+}
+
+sub rollback_to {
+}
+
+package DBIx::ThinSQL::Driver::SQLite;
+use strict;
+use warnings;
+
+our @ISA = ('DBIx::ThinSQL::Driver');
+
+sub savepoint {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->do( 'SAVEPOINT ' . $name );
+}
+
+sub release {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->do( 'RELEASE ' . $name );
+}
+
+sub rollback_to {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->do( 'ROLLBACK TO ' . $name );
+}
+
+package DBIx::ThinSQL::Driver::Pg;
+use strict;
+use warnings;
+
+our @ISA = ('DBIx::ThinSQL::Driver');
+
+sub savepoint {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->pg_savepoint($name);
+}
+
+sub release {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->pg_release($name);
+}
+
+sub rollback_to {
+    my $self = shift;
+    my $dbh  = shift;
+    my $name = shift;
+    $dbh->pg_rollback_to($name);
 }
 
 1;

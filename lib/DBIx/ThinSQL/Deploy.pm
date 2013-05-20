@@ -6,7 +6,7 @@ use Carp qw/croak carp confess/;
 use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 sub last_deploy_id {
     my $self = shift;
@@ -93,14 +93,16 @@ sub _run_cmds {
     my $self = shift;
     my $ref  = shift;
 
+    local $self->{ShowErrorStatement} = 1;
+    local $self->{RaiseError}         = 1;
+
     $log->debug( 'running ' . scalar @$ref . ' statements' );
     my $i = 1;
 
     foreach my $cmd (@$ref) {
         if ( exists $cmd->{sql} ) {
             $log->debug( "-- _run_cmd $i\n" . $cmd->{sql} );
-            eval { $self->do( $cmd->{sql} ) };
-            die $cmd->{sql} . "\n" . $@ if $@;
+            $self->do( $cmd->{sql} );
         }
         elsif ( exists $cmd->{pl} ) {
             $log->debug( "-- _run_cmd\n" . $cmd->{pl} );
@@ -156,7 +158,7 @@ sub _setup_deploy {
         $self->run_dir( $share->child( 'Deploy', $driver ) );
     }
     else {
-        $self->run_dir( dist_dir('SQL-DB'), 'Deploy', $driver );
+        $self->run_dir( path( dist_dir('DBIx-ThinSQL'), 'Deploy', $driver ) );
     }
 
     return;
@@ -178,6 +180,8 @@ sub _deploy {
     my $app  = shift || 'default';
 
     confess 'deploy(ARRAYREF)' unless ref $ref eq 'ARRAY';
+    local $self->{ShowErrorStatement} = 1;
+    local $self->{RaiseError}         = 1;
 
     my @current =
       $self->selectrow_array( 'SELECT COUNT(app) from _deploy WHERE app=?',
@@ -194,7 +198,10 @@ sub _deploy {
     $log->debug( 'Current Change ID:',   $latest_change_id );
     $log->debug( 'Requested Change ID:', scalar @$ref );
 
-    die "Requested Change ID is in the past!" if @$ref < $latest_change_id;
+    die "Requested Change ID("
+      . ( scalar @$ref )
+      . ") is less than current: $latest_change_id"
+      if @$ref < $latest_change_id;
 
     my $count = 0;
     foreach my $cmd (@$ref) {
@@ -207,8 +214,7 @@ sub _deploy {
 
         if ( exists $cmd->{sql} ) {
             $log->debug( "-- change #$count\n" . $cmd->{sql} );
-            eval { $self->do( $cmd->{sql} ) };
-            die $cmd->{sql} . "\n" . $@ if $@;
+            $self->do( $cmd->{sql} );
             $self->do( "
 UPDATE 
     _deploy

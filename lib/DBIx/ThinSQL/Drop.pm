@@ -5,13 +5,13 @@ use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 use DBIx::ThinSQL::Deploy;
 
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 sub drop_everything {
     my $self      = shift;
     my $driver    = $self->{Driver}->{Name};
     my $share_dir = $Test::DBIx::ThinSQL::SHARE_DIR
-      || dist_dir('SQL-DB');
+      || dist_dir('DBIx-ThinSQL');
 
     my $dir = path( $share_dir, 'Drop', $driver );
     if ( !-d $dir ) {

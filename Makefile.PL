@@ -1,9 +1,13 @@
 use inc::Module::Install;
 
 name 'DBIx-ThinSQL';
-version '0.0.1_1';
+version '0.0.2';
 license 'gpl3';
-repository 'http://github.com/mlawren/p5-DBIx-ThinSQL/';
+
+homepage 'https://github.com/mlawren/p5-DBIx-ThinSQL';
+bugtracker 'https://github.com/mlawren/p5-DBIx-ThinSQL/issues';
+repository 'git://github.com/mlawren/p5-DBIx-ThinSQL.git';
+
 all_from 'lib/DBIx/ThinSQL.pm';
 readme_from 'lib/DBIx/ThinSQL.pod';
 
