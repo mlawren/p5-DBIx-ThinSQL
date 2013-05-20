@@ -232,15 +232,18 @@ subtest "DBIx::ThinSQL", sub {
         };
 
         subtest 'xarrays', sub {
-            $res = $db->xarrays(
-                select   => [qw/name phone/],
-                from     => 'users',
-                group_by => [qw/name phone/],
-                order_by => 'name asc',
-            );
+          SKIP: {
+                skip 'DBD::DBM limitation', 1 if $driver eq 'DBM';
+                $res = $db->xarrays(
+                    select   => [qw/name phone/],
+                    from     => 'users',
+                    group_by => [qw/name phone/],
+                    order_by => 'name asc',
+                );
 
-            is_deeply $res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
-              'xarrays scalar';
+                is_deeply $res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
+                  'xarrays scalar';
+            }
 
             $res = $db->xarrays(
                 select => [qw/name phone/],
@@ -360,58 +363,36 @@ subtest "DBIx::ThinSQL", sub {
 
         $db->do('DELETE FROM users');
 
-        subtest 'txn', sub {
-            $res = undef;
-            ok $db->{AutoCommit}, 'have autocommit';
+      SKIP: {
+            skip 'DBD::DBM limitation', 1 if ( $driver eq 'DBM' );
+            subtest 'txn', sub {
+                $res = undef;
+                ok $db->{AutoCommit}, 'have autocommit';
 
-            $db->txn(
-                sub {
-                    ok !$db->{AutoCommit}, 'no autocommit in txn';
-                    $res = 1;
-                }
-            );
-
-            ok $db->{AutoCommit}, 'have autocommit';
-            is $res, 1, 'sub ran in txn()';
-
-            $res = undef;
-            like exception {
                 $db->txn(
                     sub {
-                        die 'WTF';
+                        ok !$db->{AutoCommit}, 'no autocommit in txn';
+                        $res = 1;
                     }
                 );
-                die "WRONG";
-            }, qr/WTF/, 'correct exception propagated';
 
-            is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
+                ok $db->{AutoCommit}, 'have autocommit';
+                is $res, 1, 'sub ran in txn()';
 
-            $res = $db->txn(
-                sub {
+                $res = undef;
+                like exception {
                     $db->txn(
                         sub {
-                            $db->xdo(
-                                insert_into => 'users',
-                                values =>
-                                  { name => 'name1', phone => 'phone1' },
-                            );
-
-                            $res = $db->xarrays(
-                                select => [qw/name phone/],
-                                from   => 'users',
-                            );
+                            die 'WTF';
                         }
                     );
-                }
-            );
+                    die "WRONG";
+                }, qr/WTF/, 'correct exception propagated';
 
-            is_deeply $res, [ [qw/name1 phone1/] ], 'nested txn';
-            is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
+                is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
 
-            my $err;
-            @res = $db->txn(
-                sub {
-                    eval {
+                $res = $db->txn(
+                    sub {
                         $db->txn(
                             sub {
                                 $db->xdo(
@@ -419,34 +400,61 @@ subtest "DBIx::ThinSQL", sub {
                                     values =>
                                       { name => 'name1', phone => 'phone1' },
                                 );
+
+                                $res = $db->xarrays(
+                                    select => [qw/name phone/],
+                                    from   => 'users',
+                                );
                             }
                         );
-                    };
+                    }
+                );
 
-                    $err = $@;
+                is_deeply $res, [ [qw/name1 phone1/] ], 'nested txn';
+                is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
 
-                    $db->xdo(
-                        insert_into => 'users',
-                        values      => { name => 'name2', phone => 'phone2' },
-                    );
+                my $err;
+                @res = $db->txn(
+                    sub {
+                        eval {
+                            $db->txn(
+                                sub {
+                                    $db->xdo(
+                                        insert_into => 'users',
+                                        values      => {
+                                            name  => 'name1',
+                                            phone => 'phone1'
+                                        },
+                                    );
+                                }
+                            );
+                        };
 
-                    return $db->xarrays(
-                        select   => [qw/name phone/],
-                        from     => 'users',
-                        order_by => 'name',
-                    );
-                }
-            );
+                        $err = $@;
 
-            ok $err, 'know that duplicate insert failed';
-            is_deeply \@res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
-              'nested txn/svp';
-            is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
+                        $db->xdo(
+                            insert_into => 'users',
+                            values => { name => 'name2', phone => 'phone2' },
+                        );
 
-        };
+                        return $db->xarrays(
+                            select   => [qw/name phone/],
+                            from     => 'users',
+                            order_by => 'name',
+                        );
+                    }
+                );
 
-        $db->disconnect;
+                ok $err, 'know that duplicate insert failed';
+                is_deeply \@res, [ [qw/name1 phone1/], [qw/name2 phone2/] ],
+                  'nested txn/svp';
+                is $db->{private_DBIx_ThinSQL_txn}, 0, 'txn 0';
 
+            };
+
+            $db->disconnect;
+
+        }
     }
 };
 
