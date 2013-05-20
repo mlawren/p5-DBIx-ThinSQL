@@ -27,6 +27,16 @@ author_tests 'xt';
 
 install_share 'share';
 
+no_index package => 'DBIx::ThinSQL::Driver';
+no_index package => 'DBIx::ThinSQL::Driver::Pg';
+no_index package => 'DBIx::ThinSQL::Driver::SQLite';
+no_index package => 'DBIx::ThinSQL::_bv';
+no_index package => 'DBIx::ThinSQL::_expr';
+no_index package => 'DBIx::ThinSQL::_qi';
+no_index package => 'DBIx::ThinSQL::_qv';
+no_index package => 'DBIx::ThinSQL::db';
+no_index package => 'DBIx::ThinSQL::st';
+
 auto_install;
 
 WriteAll;
