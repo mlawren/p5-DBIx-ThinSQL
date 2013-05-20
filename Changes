@@ -1,3 +1,17 @@
+0.0.4 (2013-04-06)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Don't include a blib/ directory in the distribution.
+
 0.0.2 (2013-04-06)
 
     Initial Release
