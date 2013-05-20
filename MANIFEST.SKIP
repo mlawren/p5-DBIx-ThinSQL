@@ -14,3 +14,4 @@ xt/
 ^DBIx
 ^cover_db
 extlib/
+blib/
