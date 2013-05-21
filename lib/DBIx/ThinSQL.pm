@@ -364,8 +364,13 @@ sub txn {
         eval {
             if ( !$txn )
             {
-                $log->debug('ROLLBACK');
-                $self->rollback;
+                # If the transaction failed at COMMIT, then we can no
+                # longer roll back. Maybe put this around the eval for
+                # the RELEASE case as well??
+                if ( !$self->{AutoCommit} ) {
+                    $log->debug('ROLLBACK');
+                    $self->rollback unless $self->{AutoCommit};
+                }
             }
             else {
                 $log->debug( 'ROLLBACK TO ' . $txn );
