@@ -1,5 +1,5 @@
 blib/
-^DBIx*
+DBIx-ThinSQL*
 extlib/
 inc/
 Makefile
