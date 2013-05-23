@@ -16,6 +16,9 @@ BEGIN {
     $dir2 = path(qw/t share deploy2/)->absolute;
 }
 
+plan skip_all => 'No database handles to test'
+  unless Test::Database->handles(qw/SQLite Pg/);
+
 foreach my $handle ( Test::Database->handles(qw/SQLite Pg/) ) {
 
     subtest 'Deploy ' . $handle->dbd, sub {
