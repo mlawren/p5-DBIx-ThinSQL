@@ -1,4 +1,18 @@
-0.0.4 (2013-04-06)
+0.0.5_1 (2013-05-24)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Skip tests in Deploy.t when no valid handles available
+
+    Bug Fixes:
+        - Only rollback if error doesn't occur on commit.
+
+0.0.4 (2013-05-20)
 
     API Changes:
         - None.
