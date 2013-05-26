@@ -8,6 +8,7 @@
 
     Enhancements:
         - Skip tests in Deploy.t when no valid handles available
+        - Handle UNION [ALL] statements
 
     Bug Fixes:
         - Only rollback if error doesn't occur on commit.
