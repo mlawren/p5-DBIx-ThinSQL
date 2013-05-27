@@ -143,32 +143,6 @@ Does a prepare but knows about bind values and quoted values.
 
 Does a prepare but knows about bind values and quoted values.
 
-=item insert(into => $table, values => \%val) -> Int
-
-Insert a row into the database and return the number of rows affected.
-
-=item update($table, set => \%values, where => \%expr) -> Int
-
-Update rows in the database and return the number of rows affected.
-
-This method is retricted to the wholesale replacement of column values
-(no database-side calculations etc).  Multiple WHERE key/values are
-only 'AND'd together. An 'undef' value maps to SQL's NULL value.
-
-=item delete(from => $table, where => \%expr) -> Int
-
-Delete rows from the database and return the number of rows affected.
-
-=item select(\@columns, from => $table, where => \%expr) -> @Obj
-
-Retrieve rows from the database as a list of objects in array context,
-or a single object in scalar context. These objects (blessed into a
-dynamically created class) have an accessor method for each column.
-
-The first argument to the select() method must be either an array
-reference of column names, or a single '*'. If the array reference is
-given only the columns specified will be retrieved from the database.
-
 =item txn( &coderef )
 
 Runs the &coderef subroutine inside an SQL transaction.  If &coderef
@@ -177,6 +151,15 @@ gets re-thrown.
 
 Calls to C<txn> can be nested. Savepoints will be used by nested C<txn>
 calls for databases that support them.
+
+=item dump( $sql )
+
+=item xdump( @tokens )
+
+Debugging shortcut methods.  Take either an SQL string (for C<dump>) or
+a set of tokens (for C<xdump>), run the query, and then call the
+C<dump_results> (which pretty-prints to STDOUT) on the resulting
+statement handle.
 
 =back
 

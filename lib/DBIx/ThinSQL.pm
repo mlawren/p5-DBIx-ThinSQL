@@ -262,6 +262,20 @@ sub xdo {
     return $self->xprepare(@_)->execute;
 }
 
+sub dump {
+    my $self = shift;
+    my $sth  = $self->prepare(shift);
+    $sth->execute(@_);
+    $sth->dump_results;
+}
+
+sub xdump {
+    my $self = shift;
+    my $sth  = $self->xprepare(@_);
+    $sth->execute;
+    $sth->dump_results;
+}
+
 sub xarray {
     my $self = shift;
 
