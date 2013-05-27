@@ -231,6 +231,19 @@ call.
 
 =item OR
 
+=item C<sq ( @subquery )> -> L<DBIx::ThinSQL::_expr>
+
+A function for including a sub query inside another:
+
+    $db->xarray(
+        select => 'subquery.col',
+        from   => sq(
+            select => 'col',
+            from   => 'table',
+            where  => 'condition IS NOT NULL',
+        )->as('subquery'),
+    );
+
 =item sql_and( @args ) -> L<DBIx::ThinSQL::Expr>
 
 Maps to "$arg1 AND $arg2 AND ...".

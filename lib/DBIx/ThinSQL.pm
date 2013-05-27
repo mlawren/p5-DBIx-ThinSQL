@@ -3,9 +3,8 @@ use strict;
 use warnings;
 use DBI;
 use Exporter::Tidy
-  default => [qw/ bv qv qi /],
-  other   => [qw/ func OR AND /],
-  sql     => [
+  other => [qw/ bv qv qi sq func OR AND /],
+  sql   => [
     qw/
       case
       cast
@@ -100,14 +99,7 @@ sub func {
     return DBIx::ThinSQL::_expr->new( $func, '(', _ejoin( $joiner, @_ ), ')' );
 }
 
-package DBIx::ThinSQL::db;
-use strict;
-use warnings;
-use Carp ();
-use Log::Any qw/$log/;
-
-our @ISA = qw(DBI::db);
-our @CARP_NOT;
+our $prefix = ' ' x 4;
 
 sub _query {
 
@@ -128,7 +120,10 @@ sub _query {
 
             next unless defined $val;
 
-            if ( ref $val eq 'ARRAY' ) {
+            if ( ref $val eq 'DBIx::ThinSQL::_expr' ) {
+                push( @tokens, $val->tokens );
+            }
+            elsif ( ref $val eq 'ARRAY' ) {
                 if ($VALUES) {
                     push(
                         @tokens,
@@ -141,11 +136,11 @@ sub _query {
                 }
                 elsif ( $key =~ m/((select)|(order_by)|(group_by))/i ) {
                     push( @tokens,
-                        '    ', DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
+                        $prefix, DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
                 }
                 else {
                     push( @tokens,
-                        '    ', DBIx::ThinSQL::_ejoin( undef, @$val ) );
+                        $prefix, DBIx::ThinSQL::_ejoin( undef, @$val ) );
                 }
             }
             elsif ( ref $val eq 'HASH' ) {
@@ -169,7 +164,7 @@ sub _query {
                         push( @values,  DBIx::ThinSQL::_bv->new($v) );
                         $i++;
                     }
-                    push( @tokens, '    ' );
+                    push( @tokens, $prefix );
                     while ( $i-- ) {
                         push( @tokens,
                             shift @columns,
@@ -180,7 +175,7 @@ sub _query {
                 }
             }
             else {
-                push( @tokens, '    ' . $val );
+                push( @tokens, $prefix . $val );
             }
 
             push( @tokens, "\n" );
@@ -190,6 +185,20 @@ sub _query {
     Carp::croak "Bad Query: $@" if $@;
     return @tokens;
 }
+
+sub sq {
+    local $prefix = $prefix . ( ' ' x 4 );
+    return DBIx::ThinSQL::_expr->new( '    (', _query(@_), '    )' );
+}
+
+package DBIx::ThinSQL::db;
+use strict;
+use warnings;
+use Carp ();
+use Log::Any qw/$log/;
+
+our @ISA = qw(DBI::db);
+our @CARP_NOT;
 
 sub xprepare {
     my $self     = shift;
@@ -219,7 +228,7 @@ sub xprepare {
             else {
                 $_;
             }
-        } _query(@_)
+        } DBIx::ThinSQL::_query(@_)
     );
 
     $log->debug( "/* xprepare() with bv: $bv_count qv: $qv_count "

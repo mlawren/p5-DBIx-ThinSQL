@@ -9,6 +9,7 @@
     Enhancements:
         - Skip tests in Deploy.t when no valid handles available
         - Handle UNION [ALL] statements
+        - Sub-query support via the sq() function
 
     Bug Fixes:
         - Only rollback if error doesn't occur on commit.
