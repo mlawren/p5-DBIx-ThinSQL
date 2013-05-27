@@ -99,7 +99,8 @@ sub func {
     return DBIx::ThinSQL::_expr->new( $func, '(', _ejoin( $joiner, @_ ), ')' );
 }
 
-our $prefix = ' ' x 4;
+our $prefix1 = '';
+our $prefix2 = ' ' x 4;
 
 sub _query {
 
@@ -114,8 +115,7 @@ sub _query {
             ( my $tmp = uc($key) ) =~ s/_/ /g;
             my $VALUES = $tmp eq 'VALUES';
             if ( !$VALUES ) {
-                push( @tokens, $tmp );
-                push( @tokens, "\n" );
+                push( @tokens, $prefix1 . $tmp . "\n" );
             }
 
             next unless defined $val;
@@ -127,7 +127,7 @@ sub _query {
                 if ($VALUES) {
                     push(
                         @tokens,
-                        "VALUES\n    (",
+                        "VALUES\n$prefix2(",
                         DBIx::ThinSQL::_ejoin(
                             ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val
                         ),
@@ -136,11 +136,12 @@ sub _query {
                 }
                 elsif ( $key =~ m/((select)|(order_by)|(group_by))/i ) {
                     push( @tokens,
-                        $prefix, DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
+                        $prefix2,
+                        DBIx::ThinSQL::_ejoin( ",\n$prefix2", @$val ) );
                 }
                 else {
                     push( @tokens,
-                        $prefix, DBIx::ThinSQL::_ejoin( undef, @$val ) );
+                        $prefix2, DBIx::ThinSQL::_ejoin( undef, @$val ) );
                 }
             }
             elsif ( ref $val eq 'HASH' ) {
@@ -152,10 +153,11 @@ sub _query {
                     }
 
                     push( @tokens,
-                        '    (',
+                        $prefix2 . '(',
                         join( ', ', @columns ),
-                        ")\nVALUES\n    (",
-                        DBIx::ThinSQL::_ejoin( ', ', @values ), ')' );
+                        ")\nVALUES\n$prefix2(",
+                        DBIx::ThinSQL::_ejoin( ', ', @values ),
+                        ')' );
                 }
                 else {
                     my ( $i, @columns, @values );
@@ -164,7 +166,7 @@ sub _query {
                         push( @values,  DBIx::ThinSQL::_bv->new($v) );
                         $i++;
                     }
-                    push( @tokens, $prefix );
+                    push( @tokens, $prefix2 );
                     while ( $i-- ) {
                         push( @tokens,
                             shift @columns,
@@ -175,7 +177,7 @@ sub _query {
                 }
             }
             else {
-                push( @tokens, $prefix . $val );
+                push( @tokens, $prefix2 . $val );
             }
 
             push( @tokens, "\n" );
@@ -187,8 +189,15 @@ sub _query {
 }
 
 sub sq {
-    local $prefix = $prefix . ( ' ' x 4 );
-    return DBIx::ThinSQL::_expr->new( '    (', _query(@_), '    )' );
+    my $oldprefix1 = $prefix1;
+    local $prefix1 = $prefix1 . ( ' ' x 4 );
+    local $prefix2 = $prefix2 . ( ' ' x 4 );
+    my $first = '(' . shift;
+    return DBIx::ThinSQL::_expr->new(
+        $oldprefix1,
+        _query( $first, @_ ),
+        $prefix1 . ')'
+    );
 }
 
 package DBIx::ThinSQL::db;
