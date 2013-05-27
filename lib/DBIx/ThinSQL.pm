@@ -3,9 +3,8 @@ use strict;
 use warnings;
 use DBI;
 use Exporter::Tidy
-  default => [qw/ bv qv qi /],
-  other   => [qw/ func OR AND /],
-  sql     => [
+  other => [qw/ bv qv qi sq func OR AND /],
+  sql   => [
     qw/
       case
       cast
@@ -65,7 +64,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.4';
+our $VERSION = '0.0.6';
 
 sub _ejoin {
     my $joiner = shift;
@@ -100,14 +99,8 @@ sub func {
     return DBIx::ThinSQL::_expr->new( $func, '(', _ejoin( $joiner, @_ ), ')' );
 }
 
-package DBIx::ThinSQL::db;
-use strict;
-use warnings;
-use Carp ();
-use Log::Any qw/$log/;
-
-our @ISA = qw(DBI::db);
-our @CARP_NOT;
+our $prefix1 = '';
+our $prefix2 = ' ' x 4;
 
 sub _query {
 
@@ -122,30 +115,33 @@ sub _query {
             ( my $tmp = uc($key) ) =~ s/_/ /g;
             my $VALUES = $tmp eq 'VALUES';
             if ( !$VALUES ) {
-                push( @tokens, $tmp );
-                push( @tokens, "\n" );
+                push( @tokens, $prefix1 . $tmp . "\n" );
             }
 
             next unless defined $val;
 
-            if ( ref $val eq 'ARRAY' ) {
+            if ( ref $val eq 'DBIx::ThinSQL::_expr' ) {
+                push( @tokens, $val->tokens );
+            }
+            elsif ( ref $val eq 'ARRAY' ) {
                 if ($VALUES) {
                     push(
                         @tokens,
-                        "VALUES\n    (",
+                        "VALUES\n$prefix2(",
                         DBIx::ThinSQL::_ejoin(
                             ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val
                         ),
                         ')'
                     );
                 }
-                elsif ( $key =~ m/^((select)|(order_by)|(group_by))/i ) {
+                elsif ( $key =~ m/((select)|(order_by)|(group_by))/i ) {
                     push( @tokens,
-                        '    ', DBIx::ThinSQL::_ejoin( ",\n    ", @$val ) );
+                        $prefix2,
+                        DBIx::ThinSQL::_ejoin( ",\n$prefix2", @$val ) );
                 }
                 else {
                     push( @tokens,
-                        '    ', DBIx::ThinSQL::_ejoin( undef, @$val ) );
+                        $prefix2, DBIx::ThinSQL::_ejoin( undef, @$val ) );
                 }
             }
             elsif ( ref $val eq 'HASH' ) {
@@ -157,10 +153,11 @@ sub _query {
                     }
 
                     push( @tokens,
-                        '    (',
+                        $prefix2 . '(',
                         join( ', ', @columns ),
-                        ")\nVALUES\n    (",
-                        DBIx::ThinSQL::_ejoin( ', ', @values ), ')' );
+                        ")\nVALUES\n$prefix2(",
+                        DBIx::ThinSQL::_ejoin( ', ', @values ),
+                        ')' );
                 }
                 else {
                     my ( $i, @columns, @values );
@@ -169,7 +166,7 @@ sub _query {
                         push( @values,  DBIx::ThinSQL::_bv->new($v) );
                         $i++;
                     }
-                    push( @tokens, '    ' );
+                    push( @tokens, $prefix2 );
                     while ( $i-- ) {
                         push( @tokens,
                             shift @columns,
@@ -180,7 +177,7 @@ sub _query {
                 }
             }
             else {
-                push( @tokens, '    ' . $val );
+                push( @tokens, $prefix2 . $val );
             }
 
             push( @tokens, "\n" );
@@ -190,6 +187,27 @@ sub _query {
     Carp::croak "Bad Query: $@" if $@;
     return @tokens;
 }
+
+sub sq {
+    my $oldprefix1 = $prefix1;
+    local $prefix1 = $prefix1 . ( ' ' x 4 );
+    local $prefix2 = $prefix2 . ( ' ' x 4 );
+    my $first = '(' . shift;
+    return DBIx::ThinSQL::_expr->new(
+        $oldprefix1,
+        _query( $first, @_ ),
+        $prefix1 . ')'
+    );
+}
+
+package DBIx::ThinSQL::db;
+use strict;
+use warnings;
+use Carp ();
+use Log::Any qw/$log/;
+
+our @ISA = qw(DBI::db);
+our @CARP_NOT;
 
 sub xprepare {
     my $self     = shift;
@@ -219,7 +237,7 @@ sub xprepare {
             else {
                 $_;
             }
-        } _query(@_)
+        } DBIx::ThinSQL::_query(@_)
     );
 
     $log->debug( "/* xprepare() with bv: $bv_count qv: $qv_count "
@@ -251,6 +269,20 @@ sub xdo {
     my $self = shift;
 
     return $self->xprepare(@_)->execute;
+}
+
+sub dump {
+    my $self = shift;
+    my $sth  = $self->prepare(shift);
+    $sth->execute(@_);
+    $sth->dump_results;
+}
+
+sub xdump {
+    my $self = shift;
+    my $sth  = $self->xprepare(@_);
+    $sth->execute;
+    $sth->dump_results;
 }
 
 sub xarray {
@@ -364,8 +396,13 @@ sub txn {
         eval {
             if ( !$txn )
             {
-                $log->debug('ROLLBACK');
-                $self->rollback;
+                # If the transaction failed at COMMIT, then we can no
+                # longer roll back. Maybe put this around the eval for
+                # the RELEASE case as well??
+                if ( !$self->{AutoCommit} ) {
+                    $log->debug('ROLLBACK');
+                    $self->rollback unless $self->{AutoCommit};
+                }
             }
             else {
                 $log->debug( 'ROLLBACK TO ' . $txn );

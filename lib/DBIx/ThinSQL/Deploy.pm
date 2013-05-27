@@ -6,7 +6,7 @@ use Carp qw/croak carp confess/;
 use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 
-our $VERSION = '0.0.4';
+our $VERSION = '0.0.6';
 
 sub last_deploy_id {
     my $self = shift;
@@ -272,8 +272,12 @@ sub deploy_dir {
     my @files;
     my $iter = $dir->iterator;
     while ( my $file = $iter->() ) {
-        push( @files, $file )
-          if $file =~ m/.+\.((sql)|(pl))$/ and -f $file;
+        if ( $file =~ m/.+\.((sql)|(pl))$/ and -f $file ) {
+            push( @files, $file );
+        }
+        else {
+            warn "Cannot deploy file: $file";
+        }
     }
 
     my @items =

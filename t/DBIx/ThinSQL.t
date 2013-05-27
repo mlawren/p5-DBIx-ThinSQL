@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use lib 't/lib';
-use DBIx::ThinSQL ':default', ':sql';
+use DBIx::ThinSQL ':all';
 use Test::DBIx::ThinSQL qw/run_in_tempdir/;
 use Test::Fatal qw/exception/;
 use Test::More;
@@ -130,6 +130,27 @@ subtest "DBIx::ThinSQL", sub {
         @sql = $concat->tokens;
         like "@sql", qr/1 \s+ || \s+ DBIx::ThinSQL::_qv.* \s+
             || \s+ DBIx::ThinSQL::_bv.*\s+$/sx, 'CONCAT';
+
+        is join( '', DBIx::ThinSQL::_query( select => 1 ) ),
+          <<__END_SQL__, '_query';
+SELECT
+    1
+__END_SQL__
+
+        my $str = join(
+            '',
+            DBIx::ThinSQL::_query(
+                select => 'subquery.col',
+                from   => sq( select => '1 AS col', ),
+            )
+        );
+        is $str, 'SELECT
+    subquery.col
+FROM
+    (SELECT
+        1 AS col
+    )
+', 'sq()';
 
     };
 
