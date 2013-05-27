@@ -64,7 +64,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.5_1';
+our $VERSION = '0.0.6';
 
 sub _ejoin {
     my $joiner = shift;
