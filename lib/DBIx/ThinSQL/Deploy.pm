@@ -272,8 +272,12 @@ sub deploy_dir {
     my @files;
     my $iter = $dir->iterator;
     while ( my $file = $iter->() ) {
-        push( @files, $file )
-          if $file =~ m/.+\.((sql)|(pl))$/ and -f $file;
+        if ( $file =~ m/.+\.((sql)|(pl))$/ and -f $file ) {
+            push( @files, $file );
+        }
+        else {
+            warn "Cannot deploy file: $file";
+        }
     }
 
     my @items =
