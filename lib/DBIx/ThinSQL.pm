@@ -81,6 +81,18 @@ sub _ejoin {
         elsif ( ref $item eq 'DBIx::ThinSQL::_expr' ) {
             push( @tokens, $item->tokens );
         }
+        elsif ( ref $item eq 'HASH' ) {
+            my ( $i, @columns, @values );
+            while ( my ( $k, $v ) = each %$item ) {
+                push( @columns, $k );                            # qi()?
+                push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                $i++;
+            }
+            while ( $i-- ) {
+                push( @tokens, shift @columns, ' = ', shift @values, ' AND ' );
+            }
+            pop @tokens;
+        }
         else {
             push( @tokens, $item );
         }

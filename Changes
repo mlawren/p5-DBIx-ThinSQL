@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Convert HASH arguments to functions as 'KEY = bv(VAL)'
 
     Bug Fixes:
         - None.
