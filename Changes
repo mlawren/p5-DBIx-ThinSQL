@@ -4,7 +4,7 @@
         - None.
 
     New Features:
-        - None.
+        - New log_debug() method for SELECTing straight to Log::Any
 
     Enhancements:
         - Convert HASH arguments to functions as 'KEY = bv(VAL)'

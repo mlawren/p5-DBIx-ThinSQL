@@ -152,7 +152,7 @@ gets re-thrown.
 Calls to C<txn> can be nested. Savepoints will be used by nested C<txn>
 calls for databases that support them.
 
-=item dump( $sql )
+=item dump( $sql, [ @bind_values ] )
 
 =item xdump( @tokens )
 
@@ -160,6 +160,10 @@ Debugging shortcut methods.  Take either an SQL string (for C<dump>) or
 a set of tokens (for C<xdump>), run the query, and then call the
 C<dump_results> (which pretty-prints to STDOUT) on the resulting
 statement handle.
+
+=item log_debug( $sql, [ @bind_values ] )
+
+Like C<dump> but sends the results to L<Log::Any> C<debug()>.
 
 =back
 

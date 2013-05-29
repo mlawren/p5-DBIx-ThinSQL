@@ -283,6 +283,18 @@ sub xdo {
     return $self->xprepare(@_)->execute;
 }
 
+sub log_debug {
+    my $self = shift;
+    my $sql  = shift . "\n";
+    my $sth  = $self->prepare($sql);
+    $sth->execute(@_);
+    my $header = join( ', ', @{ $sth->{NAME} } ) . "\n";
+    $sql .= '  ' . $header;
+    $sql .= '  ' . ( '-' x length $header ) . "\n";
+    $sql .= '  ' . DBI::neat_list($_) . "\n" for @{ $sth->fetchall_arrayref };
+    $log->debug($sql);
+}
+
 sub dump {
     my $self = shift;
     my $sth  = $self->prepare(shift);
