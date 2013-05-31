@@ -8,6 +8,7 @@
 
     Enhancements:
         - Convert HASH arguments to functions as 'KEY = bv(VAL)'
+        - Support for [insert_info => ARRAYREF] constructs
 
     Bug Fixes:
         - None.

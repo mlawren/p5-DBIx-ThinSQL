@@ -151,6 +151,13 @@ sub _query {
                         $prefix2,
                         DBIx::ThinSQL::_ejoin( ",\n$prefix2", @$val ) );
                 }
+                elsif ( $key =~ m/insert/i ) {
+                    push( @tokens,
+                        $prefix2,
+                        ( shift @$val ) . "(\n$prefix2    ",
+                        DBIx::ThinSQL::_ejoin( ",\n$prefix2    ", @$val ),
+                        "\n$prefix2)" );
+                }
                 else {
                     push( @tokens,
                         $prefix2, DBIx::ThinSQL::_ejoin( undef, @$val ) );
