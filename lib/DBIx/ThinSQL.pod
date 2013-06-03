@@ -37,7 +37,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
     my $count = $db->xdo(
         update => 'actors',
         set    => { name => 'Jack Smith' },
-        where  => { id => 1, name => 'John Smith' },
+        where  => { id => 1, name => \'IS NOT NULL' },
     );
 
     # A "where" with an ARRAYref concatenates items together. Note the

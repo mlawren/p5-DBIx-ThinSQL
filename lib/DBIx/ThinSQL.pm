@@ -181,8 +181,13 @@ sub _query {
                 else {
                     my ( $i, @columns, @values );
                     while ( my ( $k, $v ) = each %$val ) {
-                        push( @columns, $k );                            # qi()?
-                        push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                        push( @columns, $k );    # qi()?
+                        if ( ref $v eq 'SCALAR' ) {
+                            push( @values, $$v );
+                        }
+                        else {
+                            push( @values, DBIx::ThinSQL::_bv->new($v) );
+                        }
                         $i++;
                     }
                     push( @tokens, $prefix2 );
