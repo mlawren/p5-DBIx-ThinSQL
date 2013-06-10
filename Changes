@@ -1,4 +1,4 @@
-0.0.7_1 (2013-05-27)
+0.0.8 (2013-06-11)
 
     API Changes:
         - None.
@@ -9,6 +9,7 @@
     Enhancements:
         - Convert HASH arguments to functions as 'KEY = bv(VAL)'
         - Support for [insert_info => ARRAYREF] constructs
+        - Interpret SCALAR references in HASH values as raw SQL
 
     Bug Fixes:
         - None.
