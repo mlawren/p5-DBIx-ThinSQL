@@ -64,7 +64,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.6';
+our $VERSION = '0.0.8';
 
 sub _ejoin {
     my $joiner = shift;
@@ -80,6 +80,18 @@ sub _ejoin {
         }
         elsif ( ref $item eq 'DBIx::ThinSQL::_expr' ) {
             push( @tokens, $item->tokens );
+        }
+        elsif ( ref $item eq 'HASH' ) {
+            my ( $i, @columns, @values );
+            while ( my ( $k, $v ) = each %$item ) {
+                push( @columns, $k );                            # qi()?
+                push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                $i++;
+            }
+            while ( $i-- ) {
+                push( @tokens, shift @columns, ' = ', shift @values, ' AND ' );
+            }
+            pop @tokens;
         }
         else {
             push( @tokens, $item );
@@ -139,6 +151,13 @@ sub _query {
                         $prefix2,
                         DBIx::ThinSQL::_ejoin( ",\n$prefix2", @$val ) );
                 }
+                elsif ( $key =~ m/insert/i ) {
+                    push( @tokens,
+                        $prefix2,
+                        ( shift @$val ) . "(\n$prefix2    ",
+                        DBIx::ThinSQL::_ejoin( ",\n$prefix2    ", @$val ),
+                        "\n$prefix2)" );
+                }
                 else {
                     push( @tokens,
                         $prefix2, DBIx::ThinSQL::_ejoin( undef, @$val ) );
@@ -162,8 +181,13 @@ sub _query {
                 else {
                     my ( $i, @columns, @values );
                     while ( my ( $k, $v ) = each %$val ) {
-                        push( @columns, $k );                            # qi()?
-                        push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                        push( @columns, $k );    # qi()?
+                        if ( ref $v eq 'SCALAR' ) {
+                            push( @values, $$v );
+                        }
+                        else {
+                            push( @values, DBIx::ThinSQL::_bv->new($v) );
+                        }
                         $i++;
                     }
                     push( @tokens, $prefix2 );
@@ -269,6 +293,18 @@ sub xdo {
     my $self = shift;
 
     return $self->xprepare(@_)->execute;
+}
+
+sub log_debug {
+    my $self = shift;
+    my $sql  = shift . "\n";
+    my $sth  = $self->prepare($sql);
+    $sth->execute(@_);
+    my $header = join( ', ', @{ $sth->{NAME} } ) . "\n";
+    $sql .= '  ' . $header;
+    $sql .= '  ' . ( '-' x length $header ) . "\n";
+    $sql .= '  ' . DBI::neat_list($_) . "\n" for @{ $sth->fetchall_arrayref };
+    $log->debug($sql);
 }
 
 sub dump {

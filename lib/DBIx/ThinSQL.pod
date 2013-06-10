@@ -5,7 +5,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.6 (yyyy-mm-dd) development release.
+0.0.8 (2013-06-11) development release.
 
 =head1 SYNOPSIS
 
@@ -37,7 +37,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
     my $count = $db->xdo(
         update => 'actors',
         set    => { name => 'Jack Smith' },
-        where  => { id => 1, name => 'John Smith' },
+        where  => { id => 1, name => \'IS NOT NULL' },
     );
 
     # A "where" with an ARRAYref concatenates items together. Note the
@@ -152,7 +152,7 @@ gets re-thrown.
 Calls to C<txn> can be nested. Savepoints will be used by nested C<txn>
 calls for databases that support them.
 
-=item dump( $sql )
+=item dump( $sql, [ @bind_values ] )
 
 =item xdump( @tokens )
 
@@ -160,6 +160,10 @@ Debugging shortcut methods.  Take either an SQL string (for C<dump>) or
 a set of tokens (for C<xdump>), run the query, and then call the
 C<dump_results> (which pretty-prints to STDOUT) on the resulting
 statement handle.
+
+=item log_debug( $sql, [ @bind_values ] )
+
+Like C<dump> but sends the results to L<Log::Any> C<debug()>.
 
 =back
 
