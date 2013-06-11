@@ -101,7 +101,6 @@ sub _run_cmds {
 
     foreach my $cmd (@$ref) {
         if ( exists $cmd->{sql} ) {
-            $log->debug( "-- _run_cmd $i\n" . $cmd->{sql} );
             $self->do( $cmd->{sql} );
         }
         elsif ( exists $cmd->{pl} ) {
@@ -213,7 +212,7 @@ sub _deploy {
           || confess "Missing 'sql' or 'pl' key for id " . $count;
 
         if ( exists $cmd->{sql} ) {
-            $log->debug( "-- change #$count\n" . $cmd->{sql} );
+            $log->debug("-- change #$count\n");
             $self->do( $cmd->{sql} );
             $self->do( "
 UPDATE 
