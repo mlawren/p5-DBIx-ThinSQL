@@ -6,7 +6,7 @@ use Carp qw/croak carp confess/;
 use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 
-our $VERSION = '0.0.8';
+our $VERSION = '0.0.9_1';
 
 sub last_deploy_id {
     my $self = shift;
