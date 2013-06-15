@@ -9,6 +9,8 @@
 
     Enhancements:
         - Remove redundant logging where DBI's trace works better
+        - Remove hack to make SQLite sequences work, replaced by
+          "create_sqlite_sequence" function in DBIx::ThinSQL::SQLite.
 
     Bug Fixes:
         - None.

@@ -17,15 +17,3 @@ BEGIN
         app = OLD.app
     ;
 END;
-
--- The following three statements are to force the creation of the
--- SQLite sqlite_sequences table.
-
-CREATE TABLE Ze0zoh9uaeX0oov0 (
-    id integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-    col varchar
-);
-
-INSERT INTO Ze0zoh9uaeX0oov0(col) VALUES('dummy');
-
-DROP TABLE Ze0zoh9uaeX0oov0;
