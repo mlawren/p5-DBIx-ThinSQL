@@ -109,6 +109,14 @@ sub run_arrayref {
     return scalar @$ref;
 }
 
+sub run_sql {
+    my $self = shift;
+    my $sql  = shift;
+
+    $log->debug("run_sql");
+    $self->run_arrayref( _split_sql($sql) );
+}
+
 sub run_file {
     my $self = shift;
     my $file = shift;
@@ -318,6 +326,7 @@ sub deployed_table_info {
     *{'DBIx::ThinSQL::db::last_deploy_id'}      = \&last_deploy_id;
     *{'DBIx::ThinSQL::db::_split_sql'}          = \&_split_sql;
     *{'DBIx::ThinSQL::db::_load_file'}          = \&_load_file;
+    *{'DBIx::ThinSQL::db::run_sql'}             = \&run_sql;
     *{'DBIx::ThinSQL::db::run_arrayref'}        = \&run_arrayref;
     *{'DBIx::ThinSQL::db::run_file'}            = \&run_file;
     *{'DBIx::ThinSQL::db::run_dir'}             = \&run_dir;

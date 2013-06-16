@@ -33,7 +33,7 @@ B<You should only ever add new statements to your sources!>
 
 =over 4
 
-=item run_arrayref($arrayref, [$app])
+=item run_arrayref($arrayref)
 
 Runs each of the statements contained in $arrayref against the
 database.  $arrayref is an array of hashrefs containing a single
@@ -41,12 +41,16 @@ key/value pair.  The key must be either I<sql> or I<pl>. Returns a two
 item list: the first value is the old deploy ID, the second value is
 the new deploy id.
 
-=item run_file($file, [$app])
+=item run_sql($sql)
+
+Runs the statements in $sql against the database.
+
+=item run_file($file)
 
 Runs the contents of $file (which must end in F<.sql> or F<.pl>)
 against the database.
 
-=item run_dir($directory, [$app])
+=item run_dir($directory)
 
 Runs the SQL F<*.sql> or Perl F<*.pl> files found in $directory against
 the database.

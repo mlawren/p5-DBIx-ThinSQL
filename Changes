@@ -4,8 +4,10 @@
         - Consistent naming of DBIx::ThinSQL::Deploy::* methods
 
     New Features:
-        - New method: DBIx::ThinSQL::Deploy->run_arrayref
-        - New method: DBIx::ThinSQL::Deploy->deploy_sql
+        - New methods:
+            DBIx::ThinSQL::Deploy->run_sql
+            DBIx::ThinSQL::Deploy->run_arrayref
+            DBIx::ThinSQL::Deploy->deploy_sql
 
     Enhancements:
         - Remove redundant logging where DBI's trace works better
