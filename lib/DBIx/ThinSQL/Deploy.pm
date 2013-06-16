@@ -147,7 +147,14 @@ sub _setup_deploy {
     my $driver = $self->{Driver}->{Name};
 
     $log->debug("_setup_deploy");
-    if ( my $share = $Test::DBIx::ThinSQL::SHARE_DIR ) {
+
+    if ( defined &static::find ) {
+        my $src = 'auto/share/dist/DBIx-ThinSQL/Deploy/' . $driver . '.sql';
+        my $sql = static::find($src)
+          or croak 'Driver not supported for deploy: ' . $driver;
+        $self->run_sql($sql);
+    }
+    elsif ( my $share = $Test::DBIx::ThinSQL::SHARE_DIR ) {
         $self->run_dir( $share->child( 'Deploy', $driver ) );
     }
     else {
