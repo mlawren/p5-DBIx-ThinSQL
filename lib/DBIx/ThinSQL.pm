@@ -27,9 +27,15 @@ use Exporter::Tidy
       /
   ],
   _map => {
-    bv   => sub { DBIx::ThinSQL::_bv->new(@_) },
-    qv   => sub { DBIx::ThinSQL::_qv->new(@_) },
-    qi   => sub { DBIx::ThinSQL::_qi->new(@_) },
+    bv => sub {
+        DBIx::ThinSQL::_expr->new( DBIx::ThinSQL::_bv->new(@_) );
+    },
+    qv => sub {
+        DBIx::ThinSQL::_expr->new( DBIx::ThinSQL::_qv->new(@_) );
+    },
+    qi => sub {
+        DBIx::ThinSQL::_expr->new( DBIx::ThinSQL::_qi->new(@_) );
+    },
     OR   => sub { ' OR ' },
     AND  => sub { ' AND ' },
     cast => sub { func( 'cast', ' ', @_ ) },
@@ -121,8 +127,7 @@ sub _query {
     my @tokens;
 
     eval {
-        while ( my ( $key, $val ) = splice( @_, 0, 2 ) )
-        {
+        while ( my ( $key, $val ) = splice( @_, 0, 2 ) ) {
 
             ( my $tmp = uc($key) ) =~ s/_/ /g;
             my $VALUES = $tmp eq 'VALUES';
@@ -244,8 +249,7 @@ sub xprepare {
     my $sql = join(
         '',
         map {
-            if ( ref $_ eq 'DBIx::ThinSQL::_bv' )
-            {
+            if ( ref $_ eq 'DBIx::ThinSQL::_bv' ) {
                 $bv_count++;
                 push( @bv, $_ );
                 '?';
@@ -423,8 +427,8 @@ sub txn {
     if ($error) {
 
         eval {
-            if ( !$txn )
-            {
+            if ( !$txn ) {
+
                 # If the transaction failed at COMMIT, then we can no
                 # longer roll back. Maybe put this around the eval for
                 # the RELEASE case as well??
