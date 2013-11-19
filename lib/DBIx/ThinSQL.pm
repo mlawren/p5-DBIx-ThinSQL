@@ -197,10 +197,13 @@ sub _query {
                     }
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
-                        push( @tokens,
-                            shift @columns,
-                            ' = ', shift @values,
-                            ' AND ' );
+                        push( @tokens, shift @columns );
+                        if ( !ref $values[0] || defined $values[0]->val ) {
+                            push( @tokens, ' = ', shift @values, ' AND ' );
+                        }
+                        else {
+                            push( @tokens, ' IS ', shift @values, ' AND ' );
+                        }
                     }
                     pop @tokens;
                 }
