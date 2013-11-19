@@ -409,7 +409,11 @@ sub txn {
         }
 
         if ( !$txn ) {
-            $self->commit;
+
+            # We check again for the AutoCommit state in case the
+            # $subref did something like its own ->rollback(). This
+            # really just prevents a warning from being printed.
+            $self->commit unless $self->{AutoCommit};
         }
         else {
             $driver->release( $self, 'txn' . $txn );
