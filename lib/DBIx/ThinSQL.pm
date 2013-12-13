@@ -277,7 +277,7 @@ sub xprepare {
         local $self->{RaiseError}         = 1;
         local $self->{PrintError}         = 0;
         local $self->{ShowErrorStatement} = 1;
-        my $sth = $self->prepare( $sql . ';' );
+        my $sth = $self->prepare($sql);
 
         my $i = 1;
         foreach my $bv (@bv) {
