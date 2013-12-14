@@ -1,4 +1,4 @@
-0.0.9_2 (2013-12-13)
+0.0.10 (2013-12-14)
 
     API Changes:
         - Consistent naming of DBIx::ThinSQL::Deploy::* methods
