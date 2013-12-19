@@ -57,6 +57,9 @@ sub _split_sql {
         }
     }
 
+    foreach my $item (@items) {
+        $item->{sql} =~ s/;[\s\n]*$//;
+    }
     return \@items;
 }
 
