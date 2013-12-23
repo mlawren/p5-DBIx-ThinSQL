@@ -6,18 +6,61 @@ use Carp qw/croak carp confess/;
 use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 
-our $VERSION = '0.0.8';
+our $VERSION = '0.0.12';
 
-sub last_deploy_id {
-    my $self = shift;
-    my $app = shift || 'default';
+sub _split_sql {
+    my $input = shift;
+    my $end   = '';
+    my $item  = '';
+    my @items;
 
-    my $sth = $self->table_info( '%', '%', '_deploy' );
-    return 0 unless ( @{ $sth->fetchall_arrayref } );
+    $input =~ s/^\s*--.*\n//gm;
+    $input =~ s!/\*.*?\*/!!gsm;
 
-    return $self->selectrow_array(
-        'SELECT COALESCE(MAX(seq),0) FROM _deploy WHERE app=?',
-        undef, $app );
+    while ( $input =~ s/(.*\n)// ) {
+        my $try = $1;
+
+        if ($end) {
+            if ( $try =~ m/$end/ ) {
+                $item .= $try;
+
+                if ( $try =~ m/;/ ) {
+                    $item =~ s/(^[\s\n]+)|(\s\n]+$)//;
+                    push( @items, { sql => $item } );
+                    $item = '';
+                }
+
+                $end = '';
+            }
+            else {
+                $item .= $try;
+            }
+
+        }
+        elsif ( $try =~ m/;/ ) {
+            $item .= $try;
+            $item =~ s/(^[\s\n]+)|(\s\n]+$)//;
+            push( @items, { sql => $item } );
+            $item = '';
+        }
+        elsif ( $try =~ m/^\s*CREATE( OR REPLACE)? FUNCTION.*AS (\S*)/i ) {
+            $end = $2;
+            $end =~ s/\$/\\\$/g;
+            $item .= $try;
+        }
+        elsif ( $try =~ m/^\s*CREATE TRIGGER/i ) {
+            $end = qr/(EXECUTE PROCEDURE)|(^END)/i;
+            $item .= $try;
+        }
+        else {
+            $item .= $try;
+        }
+    }
+
+    foreach my $item (@items) {
+        $item->{sql} =~ s/;[\s\n]*$//;
+    }
+    return \@items;
 }
 
 sub _load_file {
@@ -25,71 +68,21 @@ sub _load_file {
     my $type = lc $file;
 
     $log->debug( '_load_file(' . $file . ')' );
+
     confess "fatal: missing extension/type: $file\n"
       unless $type =~ s/.*\.(.+)$/$1/;
 
-    my $input = $file->slurp_utf8;
-    my $end   = '';
-    my $item  = '';
-    my @items;
-
     if ( $type eq 'sql' ) {
-
-        $input =~ s/^\s*--.*\n//gm;
-        $input =~ s!/\*.*?\*/!!gsm;
-
-        while ( $input =~ s/(.*\n)// ) {
-            my $try = $1;
-
-            if ($end) {
-                if ( $try =~ m/$end/ ) {
-                    $item .= $try;
-
-                    if ( $try =~ m/;/ ) {
-                        $item =~ s/(^[\s\n]+)|(\s\n]+$)//;
-                        push( @items, { sql => $item } );
-                        $item = '';
-                    }
-
-                    $end = '';
-                }
-                else {
-                    $item .= $try;
-                }
-
-            }
-            elsif ( $try =~ m/;/ ) {
-                $item .= $try;
-                $item =~ s/(^[\s\n]+)|(\s\n]+$)//;
-                push( @items, { sql => $item } );
-                $item = '';
-            }
-            elsif ( $try =~ m/^\s*CREATE( OR REPLACE)? FUNCTION.*AS (\S*)/i ) {
-                $end = $2;
-                $end =~ s/\$/\\\$/g;
-                $item .= $try;
-            }
-            elsif ( $try =~ m/^\s*CREATE TRIGGER/i ) {
-                $end = qr/(EXECUTE PROCEDURE)|(^END)/i;
-                $item .= $try;
-            }
-            else {
-                $item .= $try;
-            }
-        }
+        return _split_sql( $file->slurp_utf8 );
     }
     elsif ( $type eq 'pl' ) {
-        push( @items, { $type => $input } );
-    }
-    else {
-        die "Cannot load file of type '$type': $file";
+        return [ { $type => $file->slurp_utf8 } ];
     }
 
-    $log->debug( scalar @items . ' statements' );
-    return @items;
+    die "Cannot load file of type '$type': $file";
 }
 
-sub _run_cmds {
+sub run_arrayref {
     my $self = shift;
     my $ref  = shift;
 
@@ -101,7 +94,6 @@ sub _run_cmds {
 
     foreach my $cmd (@$ref) {
         if ( exists $cmd->{sql} ) {
-            $log->debug( "-- _run_cmd $i\n" . $cmd->{sql} );
             $self->do( $cmd->{sql} );
         }
         elsif ( exists $cmd->{pl} ) {
@@ -120,12 +112,20 @@ sub _run_cmds {
     return scalar @$ref;
 }
 
+sub run_sql {
+    my $self = shift;
+    my $sql  = shift;
+
+    $log->debug("run_sql");
+    $self->run_arrayref( _split_sql($sql) );
+}
+
 sub run_file {
     my $self = shift;
     my $file = shift;
 
     $log->debug("run_file($file)");
-    $self->_run_cmds( _load_file($file) );
+    $self->run_arrayref( _load_file($file) );
 }
 
 sub run_dir {
@@ -142,11 +142,7 @@ sub run_dir {
           if $file =~ m/.+\.((sql)|(pl))$/ and -f $file;
     }
 
-    my @items =
-      map  { _load_file($_) }
-      sort { $a->stringify cmp $b->stringify } @files;
-
-    $self->_run_cmds( \@items );
+    $self->run_file($_) for sort { $a->stringify cmp $b->stringify } @files;
 }
 
 sub _setup_deploy {
@@ -154,7 +150,14 @@ sub _setup_deploy {
     my $driver = $self->{Driver}->{Name};
 
     $log->debug("_setup_deploy");
-    if ( my $share = $Test::DBIx::ThinSQL::SHARE_DIR ) {
+
+    if ( defined &static::find ) {
+        my $src = 'auto/share/dist/DBIx-ThinSQL/Deploy/' . $driver . '.sql';
+        my $sql = static::find($src)
+          or croak 'Driver not supported for deploy: ' . $driver;
+        $self->run_sql($sql);
+    }
+    elsif ( my $share = $Test::DBIx::ThinSQL::SHARE_DIR ) {
         $self->run_dir( $share->child( 'Deploy', $driver ) );
     }
     else {
@@ -164,17 +167,19 @@ sub _setup_deploy {
     return;
 }
 
-sub deploy {
+sub last_deploy_id {
     my $self = shift;
-    my $ref  = shift;
-    my $app  = shift || 'default';
+    my $app = shift || 'default';
 
-    $log->debug("deploy($app)");
-    $self->_setup_deploy;
-    $self->_deploy( $ref, $app );
+    my $sth = $self->table_info( '%', '%', '_deploy' );
+    return 0 unless ( @{ $sth->fetchall_arrayref } );
+
+    return $self->selectrow_array(
+        'SELECT COALESCE(MAX(seq),0) FROM _deploy WHERE app=?',
+        undef, $app );
 }
 
-sub _deploy {
+sub deploy_arrayref {
     my $self = shift;
     my $ref  = shift;
     my $app  = shift || 'default';
@@ -213,7 +218,7 @@ sub _deploy {
           || confess "Missing 'sql' or 'pl' key for id " . $count;
 
         if ( exists $cmd->{sql} ) {
-            $log->debug( "-- change #$count\n" . $cmd->{sql} );
+            $log->debug("-- change #$count\n");
             $self->do( $cmd->{sql} );
             $self->do( "
 UPDATE 
@@ -251,13 +256,23 @@ WHERE
     return ( $latest_change_id, $count );
 }
 
+sub deploy_sql {
+    my $self = shift;
+    my $sql  = shift;
+    my $app  = shift || 'default';
+
+    $log->debug("deploy_sql($app)");
+    $self->_setup_deploy;
+    $self->deploy_arrayref( _split_sql($sql), $app );
+}
+
 sub deploy_file {
     my $self = shift;
     my $file = shift;
     my $app  = shift;
     $log->debug("deploy_file($file)");
     $self->_setup_deploy;
-    $self->_deploy( [ _load_file($file) ], $app );
+    $self->deploy_arrayref( _load_file($file), $app );
 }
 
 sub deploy_dir {
@@ -280,11 +295,10 @@ sub deploy_dir {
         }
     }
 
-    my @items =
-      map  { _load_file($_) }
+    my @items = map { @{ _load_file($_) } }
       sort { $a->stringify cmp $b->stringify } @files;
 
-    $self->_deploy( \@items, $app );
+    $self->deploy_arrayref( \@items, $app );
 }
 
 sub deployed_table_info {
@@ -320,13 +334,15 @@ sub deployed_table_info {
 {
     no strict 'refs';
     *{'DBIx::ThinSQL::db::last_deploy_id'}      = \&last_deploy_id;
+    *{'DBIx::ThinSQL::db::_split_sql'}          = \&_split_sql;
     *{'DBIx::ThinSQL::db::_load_file'}          = \&_load_file;
-    *{'DBIx::ThinSQL::db::_run_cmds'}           = \&_run_cmds;
+    *{'DBIx::ThinSQL::db::run_sql'}             = \&run_sql;
+    *{'DBIx::ThinSQL::db::run_arrayref'}        = \&run_arrayref;
     *{'DBIx::ThinSQL::db::run_file'}            = \&run_file;
     *{'DBIx::ThinSQL::db::run_dir'}             = \&run_dir;
     *{'DBIx::ThinSQL::db::_setup_deploy'}       = \&_setup_deploy;
-    *{'DBIx::ThinSQL::db::deploy'}              = \&deploy;
-    *{'DBIx::ThinSQL::db::_deploy'}             = \&_deploy;
+    *{'DBIx::ThinSQL::db::deploy_arrayref'}     = \&deploy_arrayref;
+    *{'DBIx::ThinSQL::db::deploy_sql'}          = \&deploy_sql;
     *{'DBIx::ThinSQL::db::deploy_file'}         = \&deploy_file;
     *{'DBIx::ThinSQL::db::deploy_dir'}          = \&deploy_dir;
     *{'DBIx::ThinSQL::db::deployed_table_info'} = \&deployed_table_info;

@@ -1,3 +1,37 @@
+0.0.12 (2013-12-23)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Stop "shift" warnings on earlier Perls.
+        - Do not include trailing ";" in prepare statements
+
+0.0.10 (2013-12-14)
+
+    API Changes:
+        - Consistent naming of DBIx::ThinSQL::Deploy::* methods
+
+    New Features:
+        - New methods:
+            DBIx::ThinSQL::Deploy->run_sql
+            DBIx::ThinSQL::Deploy->run_arrayref
+            DBIx::ThinSQL::Deploy->deploy_sql
+
+    Enhancements:
+        - Remove redundant logging where DBI's trace works better
+        - Remove hack to make SQLite sequences work, replaced by
+          "create_sqlite_sequence" function in DBIx::ThinSQL::SQLite.
+
+    Bug Fixes:
+        - None.
+
 0.0.8 (2013-06-11)
 
     API Changes:

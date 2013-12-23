@@ -89,21 +89,11 @@ foreach my $handle ( Test::Database->handles(qw/SQLite Pg/) ) {
 
             isa_ok( $table_info, 'HASH' );
 
-            if ( $handle->dbd eq 'SQLite' ) {
-                is_deeply(
-                    [ sort keys %$table_info ],
-                    [qw/_deploy actors film_actors films sqlite_sequence/],
-                    'deployed_table_info'
-                );
-            }
-            else {
-                is_deeply(
-                    [ sort keys %$table_info ],
-                    [qw/_deploy actors film_actors films/],
-                    'deployed_table_info'
-                );
-            }
-
+            is_deeply(
+                [ sort keys %$table_info ],
+                [qw/_deploy actors film_actors films/],
+                'deployed_table_info'
+            );
         };
     };
 }

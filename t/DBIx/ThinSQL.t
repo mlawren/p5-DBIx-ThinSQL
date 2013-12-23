@@ -49,7 +49,9 @@ subtest "DBIx::ThinSQL::_qi", sub {
 subtest "DBIx::ThinSQL::_expr", sub {
 
     my $bv = bv(1);
+    isa_ok $bv, 'DBIx::ThinSQL::_expr';
     my $qv = qv(2);
+    isa_ok $qv, 'DBIx::ThinSQL::_expr';
 
     # _expr
     my $expr = DBIx::ThinSQL::_expr->new( 'func', 1, $qv, $bv );
@@ -58,7 +60,8 @@ subtest "DBIx::ThinSQL::_expr", sub {
     my $func = DBIx::ThinSQL::func( 'sum', ', ', 1, $qv, $bv );
     isa_ok $func, 'DBIx::ThinSQL::_expr', 'func';
 
-    is_deeply [ $func->tokens ], [ 'SUM', '(', 1, ', ', $qv, ', ', $bv, ')' ],
+    is_deeply [ $func->tokens ],
+      [ 'SUM', '(', 1, ', ', $qv->tokens, ', ', $bv->tokens, ')' ],
       'expr tokens';
 
     my $func_as = $func->as('name');
@@ -68,7 +71,7 @@ subtest "DBIx::ThinSQL::_expr", sub {
     my $qi     = $tokens[9];
     isa_ok $qi, 'DBIx::ThinSQL::_qi';
     is_deeply [ $func_as->tokens ],
-      [ 'SUM', '(', 1, ', ', $qv, ', ', $bv, ')', ' AS ', $qi ],
+      [ 'SUM', '(', 1, ', ', $qv->tokens, ', ', $bv->tokens, ')', ' AS ', $qi ],
       'func_as->tokens';
 };
 
@@ -105,7 +108,8 @@ subtest "DBIx::ThinSQL", sub {
         my $qv = qv(2);
 
         @tokens = DBIx::ThinSQL::_ejoin( qw/ a 1 /, $bv, $qv );
-        is_deeply \@tokens, [ qw/ 1 a /, $bv, qw/ a /, $qv ], 'ejoin many bqv';
+        is_deeply \@tokens, [ qw/ 1 a /, $bv->tokens, qw/ a /, $qv->tokens ],
+          'ejoin many bqv';
 
         # case
         my $case = case (

@@ -5,7 +5,7 @@ DBIx::ThinSQL::Deploy - Deployment support for DBIx::ThinSQL
 
 =head1 VERSION
 
-0.0.8 (2013-06-11) development release.
+0.0.12 (2013-12-23) development release.
 
 =head1 SYNOPSIS
 
@@ -14,7 +14,8 @@ DBIx::ThinSQL::Deploy - Deployment support for DBIx::ThinSQL
 
     my $db = DBIx::ThinSQL->connect('dbi:SQLite:dbname=test');
 
-    $db->deploy($arrayref);
+    $db->deploy_sql($sql);
+    $db->deploy_array($arrayref);
     $db->deploy_file('statements.sql');
     $db->deploy_dir('/location');
 
@@ -32,12 +33,24 @@ B<You should only ever add new statements to your sources!>
 
 =over 4
 
-=item run_file($file, [$app])
+=item run_arrayref($arrayref)
+
+Runs each of the statements contained in $arrayref against the
+database.  $arrayref is an array of hashrefs containing a single
+key/value pair.  The key must be either I<sql> or I<pl>. Returns a two
+item list: the first value is the old deploy ID, the second value is
+the new deploy id.
+
+=item run_sql($sql)
+
+Runs the statements in $sql against the database.
+
+=item run_file($file)
 
 Runs the contents of $file (which must end in F<.sql> or F<.pl>)
 against the database.
 
-=item run_dir($directory, [$app])
+=item run_dir($directory)
 
 Runs the SQL F<*.sql> or Perl F<*.pl> files found in $directory against
 the database.
@@ -47,7 +60,12 @@ the database.
 Returns the count of all deployment statements for application $app (or
 'default') that have already been deployed.
 
-=item deploy($arrayref, [$app])
+=item deploy_sql($sql, [$app])
+
+Deploys the statements in $sql which have not already been deployed for
+application $app (if given, 'default' otherwise).
+
+=item deploy_arrayref($arrayref, [$app])
 
 Deploys the statements in $arrayref which have not already been
 deployed for application $app (if given, 'default' otherwise).
@@ -59,12 +77,12 @@ id.
 =item deploy_file($file, [$app])
 
 Deploys the contents of $file (which must end in F<.sql> or F<.pl>)
-using deploy().
+using deploy_arrayref().
 
 =item deploy_dir($directory, [$app])
 
 Loads the SQL F<*.sql> or Perl F<*.pl> files found in $directory and
-deploys them using deploy().
+deploys them using deploy_arrayref().
 
 =item deployed_table_info([ $schema ])
 

@@ -27,9 +27,15 @@ use Exporter::Tidy
       /
   ],
   _map => {
-    bv   => sub { DBIx::ThinSQL::_bv->new(@_) },
-    qv   => sub { DBIx::ThinSQL::_qv->new(@_) },
-    qi   => sub { DBIx::ThinSQL::_qi->new(@_) },
+    bv => sub {
+        DBIx::ThinSQL::_expr->new( DBIx::ThinSQL::_bv->new(@_) );
+    },
+    qv => sub {
+        DBIx::ThinSQL::_expr->new( DBIx::ThinSQL::_qv->new(@_) );
+    },
+    qi => sub {
+        DBIx::ThinSQL::_expr->new( DBIx::ThinSQL::_qi->new(@_) );
+    },
     OR   => sub { ' OR ' },
     AND  => sub { ' AND ' },
     cast => sub { func( 'cast', ' ', @_ ) },
@@ -64,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.8';
+our $VERSION = '0.0.12';
 
 sub _ejoin {
     my $joiner = shift;
@@ -121,8 +127,7 @@ sub _query {
     my @tokens;
 
     eval {
-        while ( my ( $key, $val ) = splice( @_, 0, 2 ) )
-        {
+        while ( my ( $key, $val ) = splice( @_, 0, 2 ) ) {
 
             ( my $tmp = uc($key) ) =~ s/_/ /g;
             my $VALUES = $tmp eq 'VALUES';
@@ -192,10 +197,13 @@ sub _query {
                     }
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
-                        push( @tokens,
-                            shift @columns,
-                            ' = ', shift @values,
-                            ' AND ' );
+                        push( @tokens, shift @columns );
+                        if ( !ref $values[0] || defined $values[0]->val ) {
+                            push( @tokens, ' = ', shift @values, ' AND ' );
+                        }
+                        else {
+                            push( @tokens, ' IS ', shift @values, ' AND ' );
+                        }
                     }
                     pop @tokens;
                 }
@@ -228,7 +236,7 @@ package DBIx::ThinSQL::db;
 use strict;
 use warnings;
 use Carp ();
-use Log::Any qw/$log/;
+use Log::Any '$log';
 
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
@@ -244,8 +252,7 @@ sub xprepare {
     my $sql = join(
         '',
         map {
-            if ( ref $_ eq 'DBIx::ThinSQL::_bv' )
-            {
+            if ( ref $_ eq 'DBIx::ThinSQL::_bv' ) {
                 $bv_count++;
                 push( @bv, $_ );
                 '?';
@@ -263,10 +270,6 @@ sub xprepare {
             }
         } DBIx::ThinSQL::_query(@_)
     );
-
-    $log->debug( "/* xprepare() with bv: $bv_count qv: $qv_count "
-          . "qi: $qi_count */\n"
-          . $sql );
 
     my $sth = eval {
 
@@ -297,14 +300,15 @@ sub xdo {
 
 sub log_debug {
     my $self = shift;
-    my $sql  = shift . "\n";
-    my $sth  = $self->prepare($sql);
+    my $sql  = (shift) . "\n";
+
+    my $sth = $self->prepare( $sql . ';' );
     $sth->execute(@_);
-    my $header = join( ', ', @{ $sth->{NAME} } ) . "\n";
-    $sql .= '  ' . $header;
-    $sql .= '  ' . ( '-' x length $header ) . "\n";
-    $sql .= '  ' . DBI::neat_list($_) . "\n" for @{ $sth->fetchall_arrayref };
-    $log->debug($sql);
+
+    my $out = join( ', ', @{ $sth->{NAME} } ) . "\n";
+    $out .= '  ' . ( '-' x length $out ) . "\n";
+    $out .= '  ' . DBI::neat_list($_) . "\n" for @{ $sth->fetchall_arrayref };
+    $log->debug($out);
 }
 
 sub dump {
@@ -392,11 +396,9 @@ sub txn {
     my $result;
 
     if ( !$txn ) {
-        $log->debug('BEGIN');
         $self->begin_work;
     }
     else {
-        $log->debug( 'SAVEPOINT ' . $txn );
         $driver->savepoint( $self, 'txn' . $txn );
     }
 
@@ -410,11 +412,13 @@ sub txn {
         }
 
         if ( !$txn ) {
-            $log->debug('COMMIT');
-            $self->commit;
+
+            # We check again for the AutoCommit state in case the
+            # $subref did something like its own ->rollback(). This
+            # really just prevents a warning from being printed.
+            $self->commit unless $self->{AutoCommit};
         }
         else {
-            $log->debug( 'RELEASE ' . $txn );
             $driver->release( $self, 'txn' . $txn );
         }
 
@@ -430,18 +434,16 @@ sub txn {
     if ($error) {
 
         eval {
-            if ( !$txn )
-            {
+            if ( !$txn ) {
+
                 # If the transaction failed at COMMIT, then we can no
                 # longer roll back. Maybe put this around the eval for
                 # the RELEASE case as well??
                 if ( !$self->{AutoCommit} ) {
-                    $log->debug('ROLLBACK');
                     $self->rollback unless $self->{AutoCommit};
                 }
             }
             else {
-                $log->debug( 'ROLLBACK TO ' . $txn );
                 $driver->rollback_to( $self, 'txn' . $txn );
             }
         };
