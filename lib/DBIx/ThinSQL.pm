@@ -300,7 +300,7 @@ sub xdo {
 
 sub log_debug {
     my $self = shift;
-    my $sql  = shift . "\n";
+    my $sql  = (shift) . "\n";
 
     my $sth = $self->prepare( $sql . ';' );
     $sth->execute(@_);
