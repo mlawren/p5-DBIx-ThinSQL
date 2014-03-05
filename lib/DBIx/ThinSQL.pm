@@ -90,12 +90,34 @@ sub _ejoin {
         elsif ( ref $item eq 'HASH' ) {
             my ( $i, @columns, @values );
             while ( my ( $k, $v ) = each %$item ) {
-                push( @columns, $k );                            # qi()?
-                push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                push( @columns, $k );    # qi()?
+                if ( ref $v eq 'SCALAR' ) {
+                    push( @values, $$v );
+                }
+                elsif ( ref $v eq 'ARRAY' ) {
+                    push( @values,
+                        [ map { DBIx::ThinSQL::_bv->new($_) } @$v ] );
+                }
+                else {
+                    push( @values, DBIx::ThinSQL::_bv->new($v) );
+                }
                 $i++;
             }
+            push( @tokens, ' ' );    #$prefix2 );
             while ( $i-- ) {
-                push( @tokens, shift @columns, ' = ', shift @values, ' AND ' );
+                push( @tokens, shift @columns );
+                if ( ref $values[0] eq 'ARRAY' ) {
+
+                    push( @tokens,
+                        ' IN (', _ejoin( ',', @{ shift @values } ),
+                        ')', ' AND ' );
+                }
+                elsif ( !ref $values[0] || defined $values[0]->val ) {
+                    push( @tokens, ' = ', shift @values, ' AND ' );
+                }
+                else {
+                    push( @tokens, ' IS ', shift @values, ' AND ' );
+                }
             }
             pop @tokens;
         }
@@ -190,6 +212,10 @@ sub _query {
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
                         }
+                        elsif ( ref $v eq 'ARRAY' ) {
+                            push( @values,
+                                [ map { DBIx::ThinSQL::_bv->new($_) } @$v ] );
+                        }
                         else {
                             push( @values, DBIx::ThinSQL::_bv->new($v) );
                         }
@@ -198,7 +224,12 @@ sub _query {
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
                         push( @tokens, shift @columns );
-                        if ( !ref $values[0] || defined $values[0]->val ) {
+                        if ( ref $values[0] eq 'ARRAY' ) {
+                            push( @tokens,
+                                ' IN (', @{ shift @values },
+                                ')', ' AND ' );
+                        }
+                        elsif ( !ref $values[0] || defined $values[0]->val ) {
                             push( @tokens, ' = ', shift @values, ' AND ' );
                         }
                         else {
