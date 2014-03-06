@@ -164,14 +164,19 @@ sub _query {
             }
             elsif ( ref $val eq 'ARRAY' ) {
                 if ($VALUES) {
-                    push(
-                        @tokens,
-                        "VALUES\n$prefix2(",
-                        DBIx::ThinSQL::_ejoin(
-                            ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val
-                        ),
-                        ')'
-                    );
+                    if (@$val) {
+                        push(
+                            @tokens,
+                            "VALUES\n$prefix2(",
+                            DBIx::ThinSQL::_ejoin(
+                                ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val
+                            ),
+                            ')'
+                        );
+                    }
+                    else {
+                        push( @tokens, "DEFAULT VALUES\n", );
+                    }
                 }
                 elsif ( $key =~ m/((select)|(order_by)|(group_by))/i ) {
                     push( @tokens,
@@ -192,18 +197,23 @@ sub _query {
             }
             elsif ( ref $val eq 'HASH' ) {
                 if ($VALUES) {
-                    my ( @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
-                        push( @columns, $k );                            # qi()?
-                        push( @values,  DBIx::ThinSQL::_bv->new($v) );
-                    }
+                    if ( keys %$val ) {
+                        my ( @columns, @values );
+                        while ( my ( $k, $v ) = each %$val ) {
+                            push( @columns, $k );    # qi()?
+                            push( @values, DBIx::ThinSQL::_bv->new($v) );
+                        }
 
-                    push( @tokens,
-                        $prefix2 . '(',
-                        join( ', ', @columns ),
-                        ")\nVALUES\n$prefix2(",
-                        DBIx::ThinSQL::_ejoin( ', ', @values ),
-                        ')' );
+                        push( @tokens,
+                            $prefix2 . '(',
+                            join( ', ', @columns ),
+                            ")\nVALUES\n$prefix2(",
+                            DBIx::ThinSQL::_ejoin( ', ', @values ),
+                            ')' );
+                    }
+                    else {
+                        push( @tokens, "DEFAULT VALUES\n", );
+                    }
                 }
                 else {
                     my ( $i, @columns, @values );
