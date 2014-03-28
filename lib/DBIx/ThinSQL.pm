@@ -153,6 +153,7 @@ sub _query {
 
             ( my $tmp = uc($key) ) =~ s/_/ /g;
             my $VALUES = $tmp eq 'VALUES';
+            my $SET    = $tmp eq 'SET';
             if ( !$VALUES ) {
                 push( @tokens, $prefix1 . $tmp . "\n" );
             }
@@ -214,6 +215,29 @@ sub _query {
                     else {
                         push( @tokens, "DEFAULT VALUES\n", );
                     }
+                }
+                elsif ($SET) {
+                    my ( $i, @columns, @values );
+                    while ( my ( $k, $v ) = each %$val ) {
+                        push( @columns, $k );    # qi()?
+                        if ( ref $v eq 'SCALAR' ) {
+                            push( @values, $$v );
+                        }
+                        elsif ( ref $v eq 'ARRAY' ) {
+                            push( @values,
+                                [ map { DBIx::ThinSQL::_bv->new($_) } @$v ] );
+                        }
+                        else {
+                            push( @values, DBIx::ThinSQL::_bv->new($v) );
+                        }
+                        $i++;
+                    }
+                    push( @tokens, $prefix2 );
+                    while ( $i-- ) {
+                        push( @tokens, shift @columns );
+                        push( @tokens, ' = ', shift @values, ', ' );
+                    }
+                    pop @tokens;
                 }
                 else {
                     my ( $i, @columns, @values );
