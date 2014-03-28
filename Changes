@@ -1,4 +1,18 @@
-0.0.12 (yyyy-mm-dd)
+0.0.x (yyyy-mm-dd)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Add UPDATE ... SET support
+
+    Bug Fixes:
+        - None.
+
+0.0.12 (2013-12-26)
 
     API Changes:
         - None.
