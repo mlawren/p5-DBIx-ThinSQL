@@ -7,23 +7,68 @@ use DBIx::ThinSQL::Deploy;
 
 our $VERSION = '0.0.12';
 
-sub drop_everything {
-    my $self      = shift;
+sub _doit {
+    my $self = shift;
+    my $type = shift;
+
     my $driver    = $self->{Driver}->{Name};
     my $share_dir = $Test::DBIx::ThinSQL::SHARE_DIR
       || dist_dir('DBIx-ThinSQL');
 
-    my $dir = path( $share_dir, 'Drop', $driver );
-    if ( !-d $dir ) {
+    my $file = path( $share_dir, 'Drop', $driver, $type . '.sql' );
+    if ( !-f $file ) {
         require Carp;
-        Carp::croak "Drop for driver $driver is unsupported.";
+        Carp::croak "Drop $type for driver $driver is unsupported.";
     }
-    return $self->run_dir($dir);
+
+    return $self->run_file($file);
 }
 
-{
-    no strict 'refs';
-    *{'DBIx::ThinSQL::db::drop_everything'} = \&drop_everything;
+sub DBIx::ThinSQL::db::drop_indexes {
+    my $self = shift;
+    return _doit( $self, 'indexes' );
+}
+
+sub DBIx::ThinSQL::db::drop_functions {
+    my $self = shift;
+    return _doit( $self, 'functions' );
+}
+
+sub DBIx::ThinSQL::db::drop_languages {
+    my $self = shift;
+    return _doit( $self, 'languages' );
+}
+
+sub DBIx::ThinSQL::db::drop_sequences {
+    my $self = shift;
+    return _doit( $self, 'sequences' );
+}
+
+sub DBIx::ThinSQL::db::drop_tables {
+    my $self = shift;
+    return _doit( $self, 'tables' );
+}
+
+sub DBIx::ThinSQL::db::drop_triggers {
+    my $self = shift;
+    return _doit( $self, 'triggers' );
+}
+
+sub DBIx::ThinSQL::db::drop_views {
+    my $self = shift;
+    return _doit( $self, 'views' );
+}
+
+sub DBIx::ThinSQL::db::drop_everything {
+    my $self = shift;
+    return
+         _doit( $self, 'indexes' )
+      && _doit( $self, 'functions' )
+      && _doit( $self, 'languages' )
+      && _doit( $self, 'sequences' )
+      && _doit( $self, 'tables' )
+      && _doit( $self, 'triggers' )
+      && _doit( $self, 'views' );
 }
 
 1;

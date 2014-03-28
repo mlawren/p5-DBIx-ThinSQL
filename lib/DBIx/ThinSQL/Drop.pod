@@ -28,13 +28,47 @@ what with your test database.
 
 This module currently only works with SQLite and PostgreSQL databases.
 
+B<*WARNING*> All of the following methods EAT YOUR DATA! B<*WARNING*>
+
 =head1 METHODS
 
 =over 4
 
-=item drop_everything
+=item drop_functions
 
-B<*WARNING*> This method EATS YOUR DATA! B<*WARNING*>
+Drops all functions from the database.
+
+=item drop_indexes
+
+Drops all indexes from the database.
+
+
+=item drop_languages
+
+Drops all languages from the database.
+
+
+=item drop_sequences
+
+Drops all sequences from the database.
+
+
+=item drop_table
+
+Drops all tables from the database.
+
+
+=item drop_triggers
+
+Drops all triggers from the database.
+
+
+=item drop_views
+
+Drops all views from the database.
+
+
+=item drop_everything
 
 Drops all tables, sequences, triggers and functions from the database.
 

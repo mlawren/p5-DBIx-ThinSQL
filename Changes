@@ -8,6 +8,7 @@
 
     Enhancements:
         - Add UPDATE ... SET support
+        - Split drop_everything() into individual methods
 
     Bug Fixes:
         - None.
