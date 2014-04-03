@@ -11,7 +11,8 @@
         - Split drop_everything() into individual methods
 
     Bug Fixes:
-        - None.
+        - Ensure VALUES appears when argument is not an ARRAY or HASH
+          reference.
 
 0.0.12 (2013-12-26)
 

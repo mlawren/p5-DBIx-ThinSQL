@@ -274,6 +274,10 @@ sub _query {
                 }
             }
             else {
+                if ($VALUES) {
+                    push( @tokens, $prefix1 . $tmp . "\n" );
+                }
+
                 push( @tokens, $prefix2 . $val );
             }
 
