@@ -9,6 +9,7 @@
     Enhancements:
         - Add UPDATE ... SET support
         - Split drop_everything() into individual methods
+        - Call DBI->do() from xdo() when no bind values required
 
     Bug Fixes:
         - Ensure VALUES appears when argument is not an ARRAY or HASH

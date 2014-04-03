@@ -310,7 +310,7 @@ use Log::Any '$log';
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
 
-sub xprepare {
+sub _sql_bv {
     my $self     = shift;
     my $bv_count = 0;
     my $qv_count = 0;
@@ -340,15 +340,21 @@ sub xprepare {
         } DBIx::ThinSQL::_query(@_)
     );
 
+    return $sql, @bv;
+}
+
+sub xprepare {
+    my $self = shift;
+    my ( $sql, @bv ) = $self->_sql_bv(@_);
+
+    # TODO these locals have no effect?
+    local $self->{RaiseError}         = 1;
+    local $self->{PrintError}         = 0;
+    local $self->{ShowErrorStatement} = 1;
+
     my $sth = eval {
-
-        # TODO these locals have no effect?
-        local $self->{RaiseError}         = 1;
-        local $self->{PrintError}         = 0;
-        local $self->{ShowErrorStatement} = 1;
         my $sth = $self->prepare($sql);
-
-        my $i = 1;
+        my $i   = 1;
         foreach my $bv (@bv) {
             $sth->bind_param( $i++, $bv->for_bind_param );
         }
@@ -363,8 +369,28 @@ sub xprepare {
 
 sub xdo {
     my $self = shift;
+    my ( $sql, @bv ) = $self->_sql_bv(@_);
 
-    return $self->xprepare(@_)->execute;
+    # TODO these locals have no effect?
+    local $self->{RaiseError}         = 1;
+    local $self->{PrintError}         = 0;
+    local $self->{ShowErrorStatement} = 1;
+
+    return $self->do($sql) unless @bv;
+
+    my $sth = eval {
+        my $sth = $self->prepare($sql);
+        my $i   = 1;
+        foreach my $bv (@bv) {
+            $sth->bind_param( $i++, $bv->for_bind_param );
+        }
+
+        $sth;
+    };
+
+    Carp::croak($@) if $@;
+
+    return $sth->execute;
 }
 
 sub log_debug {
