@@ -14,6 +14,7 @@
     Bug Fixes:
         - Ensure VALUES appears when argument is not an ARRAY or HASH
           reference.
+        - Correctly handle SCALAR refs in VALUES hashrefs
 
 0.0.12 (2013-12-26)
 

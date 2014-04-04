@@ -202,7 +202,17 @@ sub _query {
                         my ( @columns, @values );
                         while ( my ( $k, $v ) = each %$val ) {
                             push( @columns, $k );    # qi()?
-                            push( @values, DBIx::ThinSQL::_bv->new($v) );
+                            if ( ref $v eq 'SCALAR' ) {
+                                push( @values, $$v );
+                            }
+                            elsif ( ref $v eq 'ARRAY' ) {
+                                push( @values,
+                                    [ map { DBIx::ThinSQL::_bv->new($_) } @$v ]
+                                );
+                            }
+                            else {
+                                push( @values, DBIx::ThinSQL::_bv->new($v) );
+                            }
                         }
 
                         push( @tokens,
