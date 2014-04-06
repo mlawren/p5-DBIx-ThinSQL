@@ -10,7 +10,7 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Include a proper MANIFEST (0.0.14 was broken).
 
 0.0.14 (yyyy-mm-dd)
 
