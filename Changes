@@ -1,4 +1,18 @@
-0.0.14 (2014-04-07)
+0.0.16 (yyyy-mm-dd)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Include a proper MANIFEST (0.0.14 was broken).
+
+0.0.14 (yyyy-mm-dd)
 
     API Changes:
         - None.
