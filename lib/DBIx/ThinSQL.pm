@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.12';
+our $VERSION = '0.0.14';
 
 sub _ejoin {
     my $joiner = shift;
@@ -90,12 +90,34 @@ sub _ejoin {
         elsif ( ref $item eq 'HASH' ) {
             my ( $i, @columns, @values );
             while ( my ( $k, $v ) = each %$item ) {
-                push( @columns, $k );                            # qi()?
-                push( @values,  DBIx::ThinSQL::_bv->new($v) );
+                push( @columns, $k );    # qi()?
+                if ( ref $v eq 'SCALAR' ) {
+                    push( @values, $$v );
+                }
+                elsif ( ref $v eq 'ARRAY' ) {
+                    push( @values,
+                        [ map { DBIx::ThinSQL::_bv->new($_) } @$v ] );
+                }
+                else {
+                    push( @values, DBIx::ThinSQL::_bv->new($v) );
+                }
                 $i++;
             }
+            push( @tokens, ' ' );    #$prefix2 );
             while ( $i-- ) {
-                push( @tokens, shift @columns, ' = ', shift @values, ' AND ' );
+                push( @tokens, shift @columns );
+                if ( ref $values[0] eq 'ARRAY' ) {
+
+                    push( @tokens,
+                        ' IN (', _ejoin( ',', @{ shift @values } ),
+                        ')', ' AND ' );
+                }
+                elsif ( !ref $values[0] || defined $values[0]->val ) {
+                    push( @tokens, ' = ', shift @values, ' AND ' );
+                }
+                else {
+                    push( @tokens, ' IS ', shift @values, ' AND ' );
+                }
             }
             pop @tokens;
         }
@@ -131,6 +153,7 @@ sub _query {
 
             ( my $tmp = uc($key) ) =~ s/_/ /g;
             my $VALUES = $tmp eq 'VALUES';
+            my $SET    = $tmp eq 'SET';
             if ( !$VALUES ) {
                 push( @tokens, $prefix1 . $tmp . "\n" );
             }
@@ -142,14 +165,19 @@ sub _query {
             }
             elsif ( ref $val eq 'ARRAY' ) {
                 if ($VALUES) {
-                    push(
-                        @tokens,
-                        "VALUES\n$prefix2(",
-                        DBIx::ThinSQL::_ejoin(
-                            ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val
-                        ),
-                        ')'
-                    );
+                    if (@$val) {
+                        push(
+                            @tokens,
+                            "VALUES\n$prefix2(",
+                            DBIx::ThinSQL::_ejoin(
+                                ', ', map { DBIx::ThinSQL::_bv->new($_) } @$val
+                            ),
+                            ')'
+                        );
+                    }
+                    else {
+                        push( @tokens, "DEFAULT VALUES\n", );
+                    }
                 }
                 elsif ( $key =~ m/((select)|(order_by)|(group_by))/i ) {
                     push( @tokens,
@@ -170,25 +198,44 @@ sub _query {
             }
             elsif ( ref $val eq 'HASH' ) {
                 if ($VALUES) {
-                    my ( @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
-                        push( @columns, $k );                            # qi()?
-                        push( @values,  DBIx::ThinSQL::_bv->new($v) );
-                    }
+                    if ( keys %$val ) {
+                        my ( @columns, @values );
+                        while ( my ( $k, $v ) = each %$val ) {
+                            push( @columns, $k );    # qi()?
+                            if ( ref $v eq 'SCALAR' ) {
+                                push( @values, $$v );
+                            }
+                            elsif ( ref $v eq 'ARRAY' ) {
+                                push( @values,
+                                    [ map { DBIx::ThinSQL::_bv->new($_) } @$v ]
+                                );
+                            }
+                            else {
+                                push( @values, DBIx::ThinSQL::_bv->new($v) );
+                            }
+                        }
 
-                    push( @tokens,
-                        $prefix2 . '(',
-                        join( ', ', @columns ),
-                        ")\nVALUES\n$prefix2(",
-                        DBIx::ThinSQL::_ejoin( ', ', @values ),
-                        ')' );
+                        push( @tokens,
+                            $prefix2 . '(',
+                            join( ', ', @columns ),
+                            ")\nVALUES\n$prefix2(",
+                            DBIx::ThinSQL::_ejoin( ', ', @values ),
+                            ')' );
+                    }
+                    else {
+                        push( @tokens, "DEFAULT VALUES\n", );
+                    }
                 }
-                else {
+                elsif ($SET) {
                     my ( $i, @columns, @values );
                     while ( my ( $k, $v ) = each %$val ) {
                         push( @columns, $k );    # qi()?
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
+                        }
+                        elsif ( ref $v eq 'ARRAY' ) {
+                            push( @values,
+                                [ map { DBIx::ThinSQL::_bv->new($_) } @$v ] );
                         }
                         else {
                             push( @values, DBIx::ThinSQL::_bv->new($v) );
@@ -198,7 +245,35 @@ sub _query {
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
                         push( @tokens, shift @columns );
-                        if ( !ref $values[0] || defined $values[0]->val ) {
+                        push( @tokens, ' = ', shift @values, ', ' );
+                    }
+                    pop @tokens;
+                }
+                else {
+                    my ( $i, @columns, @values );
+                    while ( my ( $k, $v ) = each %$val ) {
+                        push( @columns, $k );    # qi()?
+                        if ( ref $v eq 'SCALAR' ) {
+                            push( @values, $$v );
+                        }
+                        elsif ( ref $v eq 'ARRAY' ) {
+                            push( @values,
+                                [ map { DBIx::ThinSQL::_bv->new($_) } @$v ] );
+                        }
+                        else {
+                            push( @values, DBIx::ThinSQL::_bv->new($v) );
+                        }
+                        $i++;
+                    }
+                    push( @tokens, $prefix2 );
+                    while ( $i-- ) {
+                        push( @tokens, shift @columns );
+                        if ( ref $values[0] eq 'ARRAY' ) {
+                            push( @tokens,
+                                ' IN (', @{ shift @values },
+                                ')', ' AND ' );
+                        }
+                        elsif ( !ref $values[0] || defined $values[0]->val ) {
                             push( @tokens, ' = ', shift @values, ' AND ' );
                         }
                         else {
@@ -209,6 +284,10 @@ sub _query {
                 }
             }
             else {
+                if ($VALUES) {
+                    push( @tokens, $prefix1 . $tmp . "\n" );
+                }
+
                 push( @tokens, $prefix2 . $val );
             }
 
@@ -241,7 +320,7 @@ use Log::Any '$log';
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
 
-sub xprepare {
+sub _sql_bv {
     my $self     = shift;
     my $bv_count = 0;
     my $qv_count = 0;
@@ -271,15 +350,21 @@ sub xprepare {
         } DBIx::ThinSQL::_query(@_)
     );
 
+    return $sql, @bv;
+}
+
+sub xprepare {
+    my $self = shift;
+    my ( $sql, @bv ) = $self->_sql_bv(@_);
+
+    # TODO these locals have no effect?
+    local $self->{RaiseError}         = 1;
+    local $self->{PrintError}         = 0;
+    local $self->{ShowErrorStatement} = 1;
+
     my $sth = eval {
-
-        # TODO these locals have no effect?
-        local $self->{RaiseError}         = 1;
-        local $self->{PrintError}         = 0;
-        local $self->{ShowErrorStatement} = 1;
         my $sth = $self->prepare($sql);
-
-        my $i = 1;
+        my $i   = 1;
         foreach my $bv (@bv) {
             $sth->bind_param( $i++, $bv->for_bind_param );
         }
@@ -294,8 +379,28 @@ sub xprepare {
 
 sub xdo {
     my $self = shift;
+    my ( $sql, @bv ) = $self->_sql_bv(@_);
 
-    return $self->xprepare(@_)->execute;
+    # TODO these locals have no effect?
+    local $self->{RaiseError}         = 1;
+    local $self->{PrintError}         = 0;
+    local $self->{ShowErrorStatement} = 1;
+
+    return $self->do($sql) unless @bv;
+
+    my $sth = eval {
+        my $sth = $self->prepare($sql);
+        my $i   = 1;
+        foreach my $bv (@bv) {
+            $sth->bind_param( $i++, $bv->for_bind_param );
+        }
+
+        $sth;
+    };
+
+    Carp::croak($@) if $@;
+
+    return $sth->execute;
 }
 
 sub log_debug {

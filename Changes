@@ -1,4 +1,4 @@
-0.0.12 (2013-12-23)
+0.0.14 (2014-04-07)
 
     API Changes:
         - None.
@@ -7,7 +7,25 @@
         - None.
 
     Enhancements:
+        - Add UPDATE ... SET support
+        - Split drop_everything() into individual methods
+        - Call DBI->do() from xdo() when no bind values required
+
+    Bug Fixes:
+        - Ensure VALUES appears when argument is not an ARRAY or HASH
+          reference.
+        - Correctly handle SCALAR refs in VALUES hashrefs
+
+0.0.12 (2013-12-26)
+
+    API Changes:
         - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Insert DEFAULT VALUES when given empty structures
 
     Bug Fixes:
         - Stop "shift" warnings on earlier Perls.
