@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Remove unecessary subtest() calls in tests
 
     Bug Fixes:
         - Make drop_everything() independent of individual drop methods
