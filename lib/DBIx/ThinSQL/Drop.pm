@@ -61,14 +61,13 @@ sub DBIx::ThinSQL::db::drop_views {
 
 sub DBIx::ThinSQL::db::drop_everything {
     my $self = shift;
-    return
-         _doit( $self, 'indexes' )
-      && _doit( $self, 'functions' )
-      && _doit( $self, 'languages' )
-      && _doit( $self, 'sequences' )
-      && _doit( $self, 'tables' )
-      && _doit( $self, 'triggers' )
-      && _doit( $self, 'views' );
+    return _doit( $self, 'indexes' ) +
+      _doit( $self, 'functions' ) +
+      _doit( $self, 'languages' ) +
+      _doit( $self, 'sequences' ) +
+      _doit( $self, 'tables' ) +
+      _doit( $self, 'triggers' ) +
+      _doit( $self, 'views' );
 }
 
 1;
