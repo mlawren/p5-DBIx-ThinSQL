@@ -11,6 +11,7 @@
 
     Bug Fixes:
         - Make drop_everything() independent of individual drop methods
+        - SQLite: drop_tables() also needs to drop indexes & triggers
 
 0.0.16 (2014-04-07)
 
