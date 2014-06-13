@@ -10,7 +10,7 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Translate arrayrefs as "IN (?,?)" for ON hashrefs
 
 0.0.18 (2014-04-10)
 

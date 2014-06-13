@@ -270,7 +270,7 @@ sub _query {
                         push( @tokens, shift @columns );
                         if ( ref $values[0] eq 'ARRAY' ) {
                             push( @tokens,
-                                ' IN (', @{ shift @values },
+                                ' IN (', _ejoin( ',', @{ shift @values } ),
                                 ')', ' AND ' );
                         }
                         elsif ( !ref $values[0] || defined $values[0]->val ) {
