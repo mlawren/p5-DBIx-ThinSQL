@@ -1,0 +1,145 @@
+0.0.20 (2014-06-13)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Translate arrayrefs as "IN (?,?)" for ON hashrefs
+
+0.0.18 (2014-04-10)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Remove unecessary subtest() calls in tests
+
+    Bug Fixes:
+        - Make drop_everything() independent of individual drop methods
+        - SQLite: drop_tables() also needs to drop indexes & triggers
+
+0.0.16 (2014-04-07)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Include a proper MANIFEST (0.0.14 was broken).
+
+0.0.14 (2014-04-07)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Add UPDATE ... SET support
+        - Split drop_everything() into individual methods
+        - Call DBI->do() from xdo() when no bind values required
+
+    Bug Fixes:
+        - Ensure VALUES appears when argument is not an ARRAY or HASH
+          reference.
+        - Correctly handle SCALAR refs in VALUES hashrefs
+
+0.0.12 (2013-12-26)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Insert DEFAULT VALUES when given empty structures
+
+    Bug Fixes:
+        - Stop "shift" warnings on earlier Perls.
+        - Do not include trailing ";" in prepare statements
+
+0.0.10 (2013-12-14)
+
+    API Changes:
+        - Consistent naming of DBIx::ThinSQL::Deploy::* methods
+
+    New Features:
+        - New methods:
+            DBIx::ThinSQL::Deploy->run_sql
+            DBIx::ThinSQL::Deploy->run_arrayref
+            DBIx::ThinSQL::Deploy->deploy_sql
+
+    Enhancements:
+        - Remove redundant logging where DBI's trace works better
+        - Remove hack to make SQLite sequences work, replaced by
+          "create_sqlite_sequence" function in DBIx::ThinSQL::SQLite.
+
+    Bug Fixes:
+        - None.
+
+0.0.8 (2013-06-11)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - New log_debug() method for SELECTing straight to Log::Any
+
+    Enhancements:
+        - Convert HASH arguments to functions as 'KEY = bv(VAL)'
+        - Support for [insert_info => ARRAYREF] constructs
+        - Interpret SCALAR references in HASH values as raw SQL
+
+    Bug Fixes:
+        - None.
+
+0.0.6 (2013-05-27)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - Sub-query support via the sq() function
+        - dump() and xdump() methods for debugging
+
+    Enhancements:
+        - Handle UNION [ALL] statements
+        - Warn on unknown deployment file type
+
+    Bug Fixes:
+        - Only rollback if error doesn't occur on commit.
+        - Skip tests in Deploy.t when no valid handles available
+
+0.0.4 (2013-05-20)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Don't include a blib/ directory in the distribution.
+
+0.0.2 (2013-04-06)
+
+    Initial Release
