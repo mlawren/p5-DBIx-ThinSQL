@@ -276,7 +276,7 @@ FROM
                 where  => 'name IS NULL',
             );
 
-            is_deeply $res, [], 'xarrays scalar undef';
+            is_deeply $res, undef, 'xarrays scalar undef';
 
             @res = $db->xarrays(
                 select   => [qw/name phone/],

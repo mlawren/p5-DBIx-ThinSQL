@@ -1,7 +1,9 @@
 0.0.21_1 (yyyy-mm-dd)
 
    API Changes:
-       - None.
+       - $sth->xarrays in scalar context now returns undef on empty
+         rows. Callers can check for definedness if need be before
+         looping.
 
    New Features:
       - None.
