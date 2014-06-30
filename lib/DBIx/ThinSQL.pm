@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.18';
+our $VERSION = '0.0.20';
 
 sub _ejoin {
     my $joiner = shift;
@@ -270,7 +270,7 @@ sub _query {
                         push( @tokens, shift @columns );
                         if ( ref $values[0] eq 'ARRAY' ) {
                             push( @tokens,
-                                ' IN (', @{ shift @values },
+                                ' IN (', _ejoin( ',', @{ shift @values } ),
                                 ')', ' AND ' );
                         }
                         elsif ( !ref $values[0] || defined $values[0]->val ) {
@@ -585,7 +585,7 @@ sub arrays {
     return unless $self->{Active};
 
     my $all = $self->fetchall_arrayref || return;
-
+    return unless @$all;
     return @$all if wantarray;
     return $all;
 }

@@ -1,3 +1,33 @@
+0.0.22 (2014-06-30)
+
+   API Changes:
+       - $sth->xarrays in scalar context now returns undef on empty
+         rows. Callers can check for definedness if need be before
+         looping.
+
+   New Features:
+      - None.
+
+   Enhancements:
+      - None.
+
+   Bug Fixes:
+      - None.
+
+0.0.20 (2014-06-13)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Translate arrayrefs as "IN (?,?)" for ON hashrefs
+
 0.0.18 (2014-04-10)
 
     API Changes:
