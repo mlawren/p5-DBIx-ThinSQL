@@ -1,4 +1,4 @@
-0.0.21_1 (yyyy-mm-dd)
+0.0.22 (yyyy-mm-dd)
 
    API Changes:
        - $sth->xarrays in scalar context now returns undef on empty
