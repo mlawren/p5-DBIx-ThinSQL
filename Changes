@@ -1,3 +1,19 @@
+0.0.22 (2014-06-30)
+
+   API Changes:
+       - $sth->xarrays in scalar context now returns undef on empty
+         rows. Callers can check for definedness if need be before
+         looping.
+
+   New Features:
+      - None.
+
+   Enhancements:
+      - None.
+
+   Bug Fixes:
+      - None.
+
 0.0.20 (2014-06-13)
 
     API Changes:
