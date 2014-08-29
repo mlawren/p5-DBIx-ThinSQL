@@ -73,6 +73,8 @@ sub _load_file {
       unless $type =~ s/.*\.(.+)$/$1/;
 
     if ( $type eq 'sql' ) {
+
+        # TODO add file name to hashrefs
         return _split_sql( $file->slurp_utf8 );
     }
     elsif ( $type eq 'pl' ) {
@@ -125,7 +127,11 @@ sub run_file {
     my $file = shift;
 
     $log->debug("run_file($file)");
-    $self->run_arrayref( _load_file($file) );
+    my $result = eval { $self->run_arrayref( _load_file($file) ) };
+    if ($@) {
+        die "$file\n" . $@;
+    }
+    return $result;
 }
 
 sub run_dir {
