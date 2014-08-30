@@ -1,3 +1,25 @@
+0.0.24 (2014-05-01)
+
+   API Changes:
+       - Methods RENAMED:
+            xarray() -> xarrayref()
+            xarrays() -> xarrayrefs()
+            xhash() -> xhashref()
+            xhashes() -> xhashrefs()
+       - xarrayref() no longer returns a list. Functionality replaced
+         by the new xlist() method.
+
+   New Features:
+      - New methods:
+            xval() returns a single scalar
+            xlist() returns first row as a list
+
+   Enhancements:
+      - None.
+
+   Bug Fixes:
+      - None.
+
 0.0.22 (2014-06-30)
 
    API Changes:
