@@ -430,48 +430,69 @@ sub xdump {
     $sth->dump_results;
 }
 
-sub xarray {
+sub xval {
     my $self = shift;
 
     my $sth = $self->xprepare(@_);
     $sth->execute;
-    my @ref = $sth->array;
+    my $ref = $sth->arrayref;
     $sth->finish;
 
-    return unless @ref;
-    return @ref if wantarray;
-    return \@ref;
+    return $ref->[0] if $ref;
+    return;
 }
 
-sub xarrays {
+sub xlist {
+    my $self = shift;
+
+    my $sth = $self->xprepare(@_);
+    $sth->execute;
+    my $ref = $sth->arrayref;
+    $sth->finish;
+
+    return @$ref if $ref;
+    return;
+}
+
+sub xarrayref {
+    my $self = shift;
+
+    my $sth = $self->xprepare(@_);
+    $sth->execute;
+    my $ref = $sth->arrayref;
+    $sth->finish;
+    return $ref;
+}
+
+sub xarrayrefs {
     my $self = shift;
 
     my $sth = $self->xprepare(@_);
     $sth->execute;
 
-    return $sth->arrays;
+    return $sth->arrayrefs;
 }
 
-sub xhash {
+sub xhashref {
     my $self = shift;
 
     my $sth = $self->xprepare(@_);
     $sth->execute;
-    my $ref = $sth->hash;
+    my $ref = $sth->hashref;
     $sth->finish;
 
     return $ref;
 }
 
-sub xhashes {
+sub xhashrefs {
     my $self = shift;
 
     my $sth = $self->xprepare(@_);
     $sth->execute;
-    return $sth->hashes;
+    return $sth->hashrefs;
 }
 
-# Can't use 'local' to managed txn count here because $self is a tied hash?
+# Can't use 'local' to managed txn count here because $self is a tied hashref?
 # Also can't use ||=.
 sub txn {
     my $self      = shift;
@@ -570,17 +591,25 @@ use warnings;
 
 our @ISA = qw(DBI::st);
 
-sub array {
+sub val {
     my $self = shift;
-    return unless $self->{Active};
-
     my $ref = $self->fetchrow_arrayref || return;
-
-    return @$ref if wantarray;
-    return $ref;
+    return $ref->[0];
 }
 
-sub arrays {
+sub list {
+    my $self = shift;
+    my $ref = $self->fetchrow_arrayref || return;
+    return @$ref;
+}
+
+sub arrayref {
+    my $self = shift;
+    return unless $self->{Active};
+    return $self->fetchrow_arrayref;
+}
+
+sub arrayrefs {
     my $self = shift;
     return unless $self->{Active};
 
@@ -590,14 +619,14 @@ sub arrays {
     return $all;
 }
 
-sub hash {
+sub hashref {
     my $self = shift;
     return unless $self->{Active};
 
     return $self->fetchrow_hashref('NAME_lc');
 }
 
-sub hashes {
+sub hashrefs {
     my $self = shift;
     return unless $self->{Active};
 

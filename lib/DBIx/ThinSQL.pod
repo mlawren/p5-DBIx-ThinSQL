@@ -52,9 +52,9 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
     );
 
     # Methods for reading from the database depend on the type of
-    # structure you want back: array or hash references.
+    # structure you want back: arrayref or hashref references.
 
-    my $ref = $db->xhash(
+    my $ref = $db->xhashref(
         select => [ 'id', 'name', qv("Some string") ],
         from   => 'actors',
         where  => [
@@ -103,7 +103,7 @@ transparently across different database types.
 
 DBIx::ThinSQL offers a couple of very simple Create, Retrieve, Update
 and Delete (CRUD) action methods.  These are designed to get you up and
-running quickly when your query data is already inside a hash. The
+running quickly when your query data is already inside a hashref. The
 methods are abstractions of the real API, but should still read as much
 as possible like SQL.
 
@@ -127,19 +127,29 @@ L<DBIx::Connector> to get nice transaction support.
 
 Does a prepare but knows about bind values and quoted values.
 
-=item xarray
+=item xval
+
+Creates a statement handle using xprepare(), executes it, and returns
+the result of the val() method.
+
+=item xlist
+
+Creates a statement handle using xprepare(), executes it, and returns
+the result of the list() method.
+
+=item xarrayref
 
 Does a prepare but knows about bind values and quoted values.
 
-=item xarrays
+=item xarrayrefs
 
 Does a prepare but knows about bind values and quoted values.
 
-=item xhash
+=item xhashref
 
 Does a prepare but knows about bind values and quoted values.
 
-=item xhashes
+=item xhashrefs
 
 Does a prepare but knows about bind values and quoted values.
 
@@ -171,26 +181,34 @@ Like C<dump> but sends the results to L<Log::Any> C<debug()>.
 
 =over
 
-=item array -> ARRAYREF
+=item val -> SCALAR
 
-Insert a row into the database and return the number of rows affected.
+Return the first value of the first row as a scalar.
 
-=item arrays -> ARRAYREF
+=item list -> LIST
 
-=item arrays -> LIST
+Return the first row from the query as a list.
+
+=item arrayref -> ARRAYREF
+
+Return the first row from the query as an array reference.
+
+=item arrayrefs -> ARRAYREF
+
+=item arrayrefs -> LIST
 
 Update rows in the database and return the number of rows affected.
 This method is retricted to the wholesale replacement of column values
 (no database-side calculations etc).  Multiple WHERE key/values are
 only 'AND'd together. An 'undef' value maps to SQL's NULL value.
 
-=item hash -> HASHREF
+=item hashref -> HASHREF
 
 Delete rows from the database and return the number of rows affected.
 
-=item hashes -> ARRAYREF[HASHREF]
+=item hashrefs -> ARRAYREF[HASHREF]
 
-=item hashes -> LIST
+=item hashrefs -> LIST
 
 Delete rows from the database and return the number of rows affected.
 
@@ -222,7 +240,7 @@ call.
 
 A function for including a sub query inside another:
 
-    $db->xarray(
+    $db->xarrayref(
         select => 'subquery.col',
         from   => sq(
             select => 'col',
