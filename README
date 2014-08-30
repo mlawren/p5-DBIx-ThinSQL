@@ -2,7 +2,7 @@ NAME
     DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 VERSION
-    0.0.22 (2014-06-30) development release.
+    0.0.24 (2014-08-30) development release.
 
 SYNOPSIS
         use strict;
@@ -48,9 +48,9 @@ SYNOPSIS
         );
 
         # Methods for reading from the database depend on the type of
-        # structure you want back: array or hash references.
+        # structure you want back: arrayref or hashref references.
 
-        my $ref = $db->xhash(
+        my $ref = $db->xhashref(
             select => [ 'id', 'name', qv("Some string") ],
             from   => 'actors',
             where  => [
@@ -97,7 +97,7 @@ DESCRIPTION
 
     DBIx::ThinSQL offers a couple of very simple Create, Retrieve, Update
     and Delete (CRUD) action methods. These are designed to get you up and
-    running quickly when your query data is already inside a hash. The
+    running quickly when your query data is already inside a hashref. The
     methods are abstractions of the real API, but should still read as much
     as possible like SQL.
 
@@ -116,16 +116,24 @@ DBH METHODS
     xprepare
         Does a prepare but knows about bind values and quoted values.
 
-    xarray
+    xval
+        Creates a statement handle using xprepare(), executes it, and
+        returns the result of the val() method.
+
+    xlist
+        Creates a statement handle using xprepare(), executes it, and
+        returns the result of the list() method.
+
+    xarrayref
         Does a prepare but knows about bind values and quoted values.
 
-    xarrays
+    xarrayrefs
         Does a prepare but knows about bind values and quoted values.
 
-    xhash
+    xhashref
         Does a prepare but knows about bind values and quoted values.
 
-    xhashes
+    xhashrefs
         Does a prepare but knows about bind values and quoted values.
 
     txn( &coderef )
@@ -147,24 +155,29 @@ DBH METHODS
         Like "dump" but sends the results to Log::Any "debug()".
 
 STH METHODS
-    array -> ARRAYREF
-        Insert a row into the database and return the number of rows
-        affected.
+    val -> SCALAR
+        Return the first value of the first row as a scalar.
 
-    arrays -> ARRAYREF
-    arrays -> LIST
+    list -> LIST
+        Return the first row from the query as a list.
+
+    arrayref -> ARRAYREF
+        Return the first row from the query as an array reference.
+
+    arrayrefs -> ARRAYREF
+    arrayrefs -> LIST
         Update rows in the database and return the number of rows affected.
         This method is retricted to the wholesale replacement of column
         values (no database-side calculations etc). Multiple WHERE
         key/values are only 'AND'd together. An 'undef' value maps to SQL's
         NULL value.
 
-    hash -> HASHREF
+    hashref -> HASHREF
         Delete rows from the database and return the number of rows
         affected.
 
-    hashes -> ARRAYREF[HASHREF]
-    hashes -> LIST
+    hashrefs -> ARRAYREF[HASHREF]
+    hashrefs -> LIST
         Delete rows from the database and return the number of rows
         affected.
 
@@ -186,7 +199,7 @@ CLASS FUNCTIONS
     "sq ( @subquery )" -> DBIx::ThinSQL::_expr
         A function for including a sub query inside another:
 
-            $db->xarray(
+            $db->xarrayref(
                 select => 'subquery.col',
                 from   => sq(
                     select => 'col',

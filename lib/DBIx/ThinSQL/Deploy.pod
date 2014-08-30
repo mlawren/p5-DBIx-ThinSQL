@@ -5,7 +5,7 @@ DBIx::ThinSQL::Deploy - Deployment support for DBIx::ThinSQL
 
 =head1 VERSION
 
-0.0.22 (2014-06-30) development release.
+0.0.24 (2014-08-30) development release.
 
 =head1 SYNOPSIS
 
@@ -15,7 +15,7 @@ DBIx::ThinSQL::Deploy - Deployment support for DBIx::ThinSQL
     my $db = DBIx::ThinSQL->connect('dbi:SQLite:dbname=test');
 
     $db->deploy_sql($sql);
-    $db->deploy_array($arrayref);
+    $db->deploy_arrayref($arrayref);
     $db->deploy_file('statements.sql');
     $db->deploy_dir('/location');
 
@@ -36,7 +36,7 @@ B<You should only ever add new statements to your sources!>
 =item run_arrayref($arrayref)
 
 Runs each of the statements contained in $arrayref against the
-database.  $arrayref is an array of hashrefs containing a single
+database.  $arrayref is an arrayref of hashrefs containing a single
 key/value pair.  The key must be either I<sql> or I<pl>. Returns a two
 item list: the first value is the old deploy ID, the second value is
 the new deploy id.
@@ -69,10 +69,10 @@ application $app (if given, 'default' otherwise).
 
 Deploys the statements in $arrayref which have not already been
 deployed for application $app (if given, 'default' otherwise).
-$arrayref is an array of hashrefs containing a single key/value pair.
-The key must be either I<sql> or I<pl>. Returns a two item list: the
-first value is the old deploy ID, the second value is the new deploy
-id.
+$arrayref is an arrayref of hashrefs containing a single key/value
+pair. The key must be either I<sql> or I<pl>. Returns a two item list:
+the first value is the old deploy ID, the second value is the new
+deploy id.
 
 =item deploy_file($file, [$app])
 
