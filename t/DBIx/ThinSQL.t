@@ -213,6 +213,30 @@ FROM
         );
         is $res, 1, 'xdo update 2';
 
+        $db->xdo(
+            insert_into => 'users',
+            values      => [ 'name5', 'phone5' ],
+        );
+
+        $res = $db->xdo(
+            update => 'users',
+            set    => { 'phone' => 'xxx' },
+            where  => { 'name !' => [ 'name1', 'name2' ] },
+        );
+
+        $res = $db->xval(
+            select => [qw/phone/],
+            from   => 'users',
+            where  => { name => 'name5' },
+        );
+
+        is $res, 'xxx', '! / NOT';
+
+        $res = $db->xdo(
+            delete_from => 'users',
+            where       => [ 'name = ', bv('name5') ],
+        );
+
         subtest 'xval', sub {
             $res = $db->xval(
                 select   => [qw/name phone/],
