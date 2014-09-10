@@ -105,18 +105,28 @@ sub _ejoin {
             }
             push( @tokens, ' ' );    #$prefix2 );
             while ( $i-- ) {
+                my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
                 push( @tokens, shift @columns );
                 if ( ref $values[0] eq 'ARRAY' ) {
 
                     push( @tokens,
+                        $not ? ' NOT' : '',
                         ' IN (', _ejoin( ',', @{ shift @values } ),
                         ')', ' AND ' );
                 }
                 elsif ( !ref $values[0] || defined $values[0]->val ) {
-                    push( @tokens, ' = ', shift @values, ' AND ' );
+
+                    push( @tokens,
+                        $not ? ' != ' : ' = ',
+                        shift @values,
+                        ' AND ' );
                 }
                 else {
-                    push( @tokens, ' IS ', shift @values, ' AND ' );
+                    push( @tokens,
+                        ' IS ',
+                        $not ? 'NOT ' : '',
+                        shift @values,
+                        ' AND ' );
                 }
             }
             pop @tokens;
@@ -267,17 +277,26 @@ sub _query {
                     }
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
+                        my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
                         push( @tokens, shift @columns );
                         if ( ref $values[0] eq 'ARRAY' ) {
                             push( @tokens,
+                                $not ? ' NOT' : '',
                                 ' IN (', _ejoin( ',', @{ shift @values } ),
                                 ')', ' AND ' );
                         }
                         elsif ( !ref $values[0] || defined $values[0]->val ) {
-                            push( @tokens, ' = ', shift @values, ' AND ' );
+                            push( @tokens,
+                                $not ? ' != ' : ' = ',
+                                shift @values,
+                                ' AND ' );
                         }
                         else {
-                            push( @tokens, ' IS ', shift @values, ' AND ' );
+                            push( @tokens,
+                                ' IS ',
+                                $not ? 'NOT ' : '',
+                                shift @values,
+                                ' AND ' );
                         }
                     }
                     pop @tokens;

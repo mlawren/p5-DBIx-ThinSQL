@@ -1,4 +1,18 @@
-0.0.24 (2014-05-01)
+0.0.26 (2014-09-10)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - Accept "column !" in hashref keys to simulate not-equals.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - None.
+
+0.0.24 (2014-08-30)
 
    API Changes:
        - Methods RENAMED:
