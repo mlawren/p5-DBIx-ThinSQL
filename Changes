@@ -3,14 +3,15 @@
     API Changes:
        - None.
 
-   New Features:
-      - None.
+    New Features:
+       - None.
 
-   Enhancements:
-      - None.
+    Enhancements:
+       - HASHref columns (for VALUES or SET or WHERE) are now sorted
+         so that statements are consistent between runs.
 
-   Bug Fixes:
-      - None.
+    Bug Fixes:
+       - None.
 
 0.0.26 (yyyy-mm-dd)
 
