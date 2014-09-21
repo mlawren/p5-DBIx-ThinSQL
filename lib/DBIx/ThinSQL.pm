@@ -240,7 +240,8 @@ sub _query {
                 }
                 elsif ($SET) {
                     my ( $i, @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
+                    foreach my $k ( sort keys %$val ) {
+                        my $v = $val->{$k};
                         push( @columns, $k );    # qi()?
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
@@ -263,7 +264,8 @@ sub _query {
                 }
                 else {
                     my ( $i, @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
+                    foreach my $k ( sort keys %$val ) {
+                        my $v = $val->{$k};
                         push( @columns, $k );    # qi()?
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
