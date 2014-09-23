@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.20';
+our $VERSION = '0.0.28';
 
 sub _ejoin {
     my $joiner = shift;
@@ -89,7 +89,8 @@ sub _ejoin {
         }
         elsif ( ref $item eq 'HASH' ) {
             my ( $i, @columns, @values );
-            while ( my ( $k, $v ) = each %$item ) {
+            foreach my $k ( sort keys %$item ) {
+                my $v = $item->{$k};
                 push( @columns, $k );    # qi()?
                 if ( ref $v eq 'SCALAR' ) {
                     push( @values, $$v );
@@ -210,7 +211,8 @@ sub _query {
                 if ($VALUES) {
                     if ( keys %$val ) {
                         my ( @columns, @values );
-                        while ( my ( $k, $v ) = each %$val ) {
+                        foreach my $k ( sort keys %$val ) {
+                            my $v = $val->{$k};
                             push( @columns, $k );    # qi()?
                             if ( ref $v eq 'SCALAR' ) {
                                 push( @values, $$v );
@@ -238,7 +240,8 @@ sub _query {
                 }
                 elsif ($SET) {
                     my ( $i, @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
+                    foreach my $k ( sort keys %$val ) {
+                        my $v = $val->{$k};
                         push( @columns, $k );    # qi()?
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
@@ -261,7 +264,8 @@ sub _query {
                 }
                 else {
                     my ( $i, @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
+                    foreach my $k ( sort keys %$val ) {
+                        my $v = $val->{$k};
                         push( @columns, $k );    # qi()?
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
