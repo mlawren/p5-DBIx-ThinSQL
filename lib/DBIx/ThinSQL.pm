@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.28';
+our $VERSION = '0.0.30';
 
 sub _ejoin {
     my $joiner = shift;
@@ -484,7 +484,9 @@ sub xarrayref {
     $sth->execute;
     my $ref = $sth->arrayref;
     $sth->finish;
-    return $ref;
+
+    return $ref if $ref;
+    return;
 }
 
 sub xarrayrefs {
@@ -504,7 +506,8 @@ sub xhashref {
     my $ref = $sth->hashref;
     $sth->finish;
 
-    return $ref;
+    return $ref if $ref;
+    return;
 }
 
 sub xhashrefs {
