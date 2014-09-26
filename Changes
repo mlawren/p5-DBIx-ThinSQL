@@ -10,7 +10,8 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Make xarrayref() and xhashref() return an empty list () in
+          list context when there are no rows.
 
 0.0.28 (2014-09-23)
 
