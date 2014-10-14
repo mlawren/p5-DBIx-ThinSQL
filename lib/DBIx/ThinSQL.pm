@@ -465,6 +465,13 @@ sub xval {
     return;
 }
 
+sub xvals {
+    my $self = shift;
+    my $sth  = $self->xprepare(@_);
+    $sth->execute;
+    return $sth->vals;
+}
+
 sub xlist {
     my $self = shift;
 
@@ -620,6 +627,14 @@ sub val {
     my $self = shift;
     my $ref = $self->fetchrow_arrayref || return;
     return $ref->[0];
+}
+
+sub vals {
+    my $self = shift;
+    my $all = $self->fetchall_arrayref || return;
+    return unless @$all;
+    return map { $_->[0] } @$all if wantarray;
+    return [ map { $_->[0] } @$all ];
 }
 
 sub list {
