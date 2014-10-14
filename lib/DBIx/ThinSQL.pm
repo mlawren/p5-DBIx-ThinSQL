@@ -571,7 +571,7 @@ sub txn {
             $self->commit unless $self->{AutoCommit};
         }
         else {
-            $driver->release( $self, 'txn' . $txn );
+            $driver->release( $self, 'txn' . $txn ) unless $self->{AutoCommit};
         }
 
     };
@@ -591,12 +591,11 @@ sub txn {
                 # If the transaction failed at COMMIT, then we can no
                 # longer roll back. Maybe put this around the eval for
                 # the RELEASE case as well??
-                if ( !$self->{AutoCommit} ) {
-                    $self->rollback unless $self->{AutoCommit};
-                }
+                $self->rollback unless $self->{AutoCommit};
             }
             else {
-                $driver->rollback_to( $self, 'txn' . $txn );
+                $driver->rollback_to( $self, 'txn' . $txn )
+                  unless $self->{AutoCommit};
             }
         };
 
