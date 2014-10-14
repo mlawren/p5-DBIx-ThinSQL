@@ -106,7 +106,13 @@ sub _ejoin {
             }
             push( @tokens, ' ' );    #$prefix2 );
             while ( $i-- ) {
+                my $like = $columns[0] =~ s/\s+like$/ LIKE /i ? 1 : 0;
+
+                my $not_like =
+                  $columns[0] =~ s/\s+(!|not)\s*like$/ NOT LIKE /i ? 1 : 0;
+
                 my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
+
                 push( @tokens, shift @columns );
                 if ( ref $values[0] eq 'ARRAY' ) {
 
@@ -116,11 +122,10 @@ sub _ejoin {
                         ')', ' AND ' );
                 }
                 elsif ( !ref $values[0] || defined $values[0]->val ) {
+                    push( @tokens, $not ? ' != ' : ' = ' )
+                      unless $like or $not_like;
 
-                    push( @tokens,
-                        $not ? ' != ' : ' = ',
-                        shift @values,
-                        ' AND ' );
+                    push( @tokens, shift @values, ' AND ' );
                 }
                 else {
                     push( @tokens,
@@ -281,6 +286,13 @@ sub _query {
                     }
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
+                        my $like = $columns[0] =~ s/\s+like$/ LIKE /i ? 1 : 0;
+
+                        my $not_like =
+                          $columns[0] =~ s/\s+(!|not)\s*like$/ NOT LIKE /i
+                          ? 1
+                          : 0;
+
                         my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
                         push( @tokens, shift @columns );
                         if ( ref $values[0] eq 'ARRAY' ) {
@@ -290,10 +302,10 @@ sub _query {
                                 ')', ' AND ' );
                         }
                         elsif ( !ref $values[0] || defined $values[0]->val ) {
-                            push( @tokens,
-                                $not ? ' != ' : ' = ',
-                                shift @values,
-                                ' AND ' );
+                            push( @tokens, $not ? ' != ' : ' = ' )
+                              unless $like or $not_like;
+
+                            push( @tokens, shift @values, ' AND ' );
                         }
                         else {
                             push( @tokens,
