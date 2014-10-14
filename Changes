@@ -4,13 +4,14 @@
         - None.
 
     New Features:
-        - None.
+        - New db->xvals() and sth->vals() methods.
+        - LIKE / NOT LIKE support in HASHrefs.
 
     Enhancements:
         - None.
 
     Bug Fixes:
-        - None.
+        - Do not attempt to ROLLBACK or RELEASE inside a transaction.
 
 0.0.30 (2014-09-26)
 
