@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.30';
+our $VERSION = '0.0.32';
 
 sub _ejoin {
     my $joiner = shift;
@@ -106,7 +106,13 @@ sub _ejoin {
             }
             push( @tokens, ' ' );    #$prefix2 );
             while ( $i-- ) {
+                my $like = $columns[0] =~ s/\s+like$/ LIKE /i ? 1 : 0;
+
+                my $not_like =
+                  $columns[0] =~ s/\s+(!|not)\s*like$/ NOT LIKE /i ? 1 : 0;
+
                 my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
+
                 push( @tokens, shift @columns );
                 if ( ref $values[0] eq 'ARRAY' ) {
 
@@ -116,11 +122,10 @@ sub _ejoin {
                         ')', ' AND ' );
                 }
                 elsif ( !ref $values[0] || defined $values[0]->val ) {
+                    push( @tokens, $not ? ' != ' : ' = ' )
+                      unless $like or $not_like;
 
-                    push( @tokens,
-                        $not ? ' != ' : ' = ',
-                        shift @values,
-                        ' AND ' );
+                    push( @tokens, shift @values, ' AND ' );
                 }
                 else {
                     push( @tokens,
@@ -281,6 +286,13 @@ sub _query {
                     }
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
+                        my $like = $columns[0] =~ s/\s+like$/ LIKE /i ? 1 : 0;
+
+                        my $not_like =
+                          $columns[0] =~ s/\s+(!|not)\s*like$/ NOT LIKE /i
+                          ? 1
+                          : 0;
+
                         my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
                         push( @tokens, shift @columns );
                         if ( ref $values[0] eq 'ARRAY' ) {
@@ -290,10 +302,10 @@ sub _query {
                                 ')', ' AND ' );
                         }
                         elsif ( !ref $values[0] || defined $values[0]->val ) {
-                            push( @tokens,
-                                $not ? ' != ' : ' = ',
-                                shift @values,
-                                ' AND ' );
+                            push( @tokens, $not ? ' != ' : ' = ' )
+                              unless $like or $not_like;
+
+                            push( @tokens, shift @values, ' AND ' );
                         }
                         else {
                             push( @tokens,
@@ -465,6 +477,13 @@ sub xval {
     return;
 }
 
+sub xvals {
+    my $self = shift;
+    my $sth  = $self->xprepare(@_);
+    $sth->execute;
+    return $sth->vals;
+}
+
 sub xlist {
     my $self = shift;
 
@@ -571,7 +590,7 @@ sub txn {
             $self->commit unless $self->{AutoCommit};
         }
         else {
-            $driver->release( $self, 'txn' . $txn );
+            $driver->release( $self, 'txn' . $txn ) unless $self->{AutoCommit};
         }
 
     };
@@ -591,12 +610,11 @@ sub txn {
                 # If the transaction failed at COMMIT, then we can no
                 # longer roll back. Maybe put this around the eval for
                 # the RELEASE case as well??
-                if ( !$self->{AutoCommit} ) {
-                    $self->rollback unless $self->{AutoCommit};
-                }
+                $self->rollback unless $self->{AutoCommit};
             }
             else {
-                $driver->rollback_to( $self, 'txn' . $txn );
+                $driver->rollback_to( $self, 'txn' . $txn )
+                  unless $self->{AutoCommit};
             }
         };
 
@@ -621,6 +639,14 @@ sub val {
     my $self = shift;
     my $ref = $self->fetchrow_arrayref || return;
     return $ref->[0];
+}
+
+sub vals {
+    my $self = shift;
+    my $all = $self->fetchall_arrayref || return;
+    return unless @$all;
+    return map { $_->[0] } @$all if wantarray;
+    return [ map { $_->[0] } @$all ];
 }
 
 sub list {
