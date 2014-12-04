@@ -10,7 +10,8 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Write NULLs out explicitly instead of binding them. Lets
+          "where => {col => undef}" work on PostgreSQL.
 
 0.0.32 (2014-10-30)
 
