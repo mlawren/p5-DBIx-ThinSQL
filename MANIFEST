@@ -17,6 +17,9 @@ lib/DBIx/ThinSQL.pm
 lib/DBIx/ThinSQL.pod
 lib/DBIx/ThinSQL/Deploy.pm
 lib/DBIx/ThinSQL/Deploy.pod
+lib/DBIx/ThinSQL/Driver.pm
+lib/DBIx/ThinSQL/Driver/Pg.pm
+lib/DBIx/ThinSQL/Driver/SQLite.pm
 lib/DBIx/ThinSQL/Drop.pm
 lib/DBIx/ThinSQL/Drop.pod
 Makefile.PL
