@@ -36,10 +36,6 @@
   nothing else to do, but it would certainly help me to know what to
   edit next.
 
-- Add an author tests (xt/) directory with Pod::Coverage tests.
-  Perhaps see my sql-db repository (also on Github) for the files I
-  usually have in there.
-  
 - Make the examples in the SYNOPSIS section more consistent, or with
   better variable names, or with an example of your own, or perhaps
   with examples borrowed/stolen from other DBIx modules, depending on
