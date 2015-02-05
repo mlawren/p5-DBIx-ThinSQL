@@ -10,5 +10,5 @@ These are the Git branches I use when developing this distribution:
     - master: Records the points in time when a stable release is made.
       I usually only merge into this branch from the devel branch,
 
-    - master-dist: Records the points in time when a stable release is
-      made.  I only merge into this branch from the devel-dist branch.
+    - dist: Records the points in time when a stable release is made.
+      I only merge into this branch from the devel-dist branch.
