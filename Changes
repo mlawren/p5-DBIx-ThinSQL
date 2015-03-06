@@ -7,7 +7,13 @@
         - None.
 
     Enhancements:
-        - None.
+        - Move driver modules into seperate files (thanks to reneeb via
+          CPAN Challenge).
+        - Fleshed out the TODO file.
+        - Cleaned up share directory handling
+        - New development branch naming scheme documented in
+          README.development
+        - Cleaned up this file to remove lots of empty noise lines.
 
     Bug Fixes:
         - Write NULLs out explicitly instead of binding them. Lets
