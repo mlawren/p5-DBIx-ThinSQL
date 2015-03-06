@@ -123,6 +123,12 @@ L<DBIx::Connector> to get nice transaction support.
 
 =over
 
+=item share_dir -> Path::Tiny
+
+Returns the path to the distribution share directory. If
+C<$DBIx::ThinSQL::SHARE_DIR> is set then that value will be returned
+instead of the default method which uses L<File::ShareDir>.
+
 =item xprepare
 
 Does a prepare but knows about bind values and quoted values.

@@ -346,11 +346,20 @@ use strict;
 use warnings;
 use Carp ();
 use Log::Any '$log';
-
 use DBIx::ThinSQL::Driver;
 
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
+
+sub share_dir {
+    require Path::Tiny;
+
+    return Path::Tiny::path($DBIX::ThinSQL::SHARE_DIR)
+      if defined $DBIX::ThinSQL::SHARE_DIR;
+
+    require File::ShareDir;
+    return Path::Tiny::path( File::ShareDir::dist_dir('DBIx-ThinSQL') );
+}
 
 sub _sql_bv {
     my $self     = shift;
@@ -545,7 +554,7 @@ sub txn {
 
     $driver ||= $self->{private_DBIx_ThinSQL_driver} = do {
         my $class = 'DBIx::ThinSQL::Driver::' . $self->{Driver}->{Name};
-        (my $path = $class) =~ s{::}{/}g;
+        ( my $path = $class ) =~ s{::}{/}g;
         $path .= '.pm';
 
         eval { require $path; $class->new } || DBIx::ThinSQL::Driver->new;
