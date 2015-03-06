@@ -17,12 +17,16 @@ lib/DBIx/ThinSQL.pm
 lib/DBIx/ThinSQL.pod
 lib/DBIx/ThinSQL/Deploy.pm
 lib/DBIx/ThinSQL/Deploy.pod
+lib/DBIx/ThinSQL/Driver.pm
+lib/DBIx/ThinSQL/Driver/Pg.pm
+lib/DBIx/ThinSQL/Driver/SQLite.pm
 lib/DBIx/ThinSQL/Drop.pm
 lib/DBIx/ThinSQL/Drop.pod
 Makefile.PL
 MANIFEST			This list of files
 META.yml
 README
+README.development
 share/Deploy/Pg/01-deploy.sql
 share/Deploy/SQLite/01-deploy.sql
 share/Drop/Pg/functions.sql
@@ -49,3 +53,4 @@ t/share/deploy2/1.sql
 t/share/deploy2/2.pl
 t/share/deploy2/3.sql
 t/share/deploy2/4.pl
+TODO

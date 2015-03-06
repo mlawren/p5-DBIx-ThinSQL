@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.32';
+our $VERSION = '0.0.33_1';
 
 sub _ejoin {
     my $joiner = shift;
@@ -128,10 +128,7 @@ sub _ejoin {
                     push( @tokens, shift @values, ' AND ' );
                 }
                 else {
-                    push( @tokens,
-                        ' IS ',
-                        $not ? 'NOT ' : '',
-                        shift @values,
+                    push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL',
                         ' AND ' );
                 }
             }
@@ -309,9 +306,7 @@ sub _query {
                         }
                         else {
                             push( @tokens,
-                                ' IS ',
-                                $not ? 'NOT ' : '',
-                                shift @values,
+                                ' IS ', $not ? 'NOT NULL' : 'NULL',
                                 ' AND ' );
                         }
                     }
@@ -351,9 +346,20 @@ use strict;
 use warnings;
 use Carp ();
 use Log::Any '$log';
+use DBIx::ThinSQL::Driver;
 
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
+
+sub share_dir {
+    require Path::Tiny;
+
+    return Path::Tiny::path($DBIX::ThinSQL::SHARE_DIR)
+      if defined $DBIX::ThinSQL::SHARE_DIR;
+
+    require File::ShareDir;
+    return Path::Tiny::path( File::ShareDir::dist_dir('DBIx-ThinSQL') );
+}
 
 sub _sql_bv {
     my $self     = shift;
@@ -548,7 +554,10 @@ sub txn {
 
     $driver ||= $self->{private_DBIx_ThinSQL_driver} = do {
         my $class = 'DBIx::ThinSQL::Driver::' . $self->{Driver}->{Name};
-        eval { $class->new } || DBIx::ThinSQL::Driver->new;
+        ( my $path = $class ) =~ s{::}{/}g;
+        $path .= '.pm';
+
+        eval { require $path; $class->new } || DBIx::ThinSQL::Driver->new;
     };
 
     my $current;
@@ -787,78 +796,6 @@ sub as {
 sub tokens {
     my $self = shift;
     return @$self;
-}
-
-package DBIx::ThinSQL::Driver;
-use strict;
-use warnings;
-
-sub new {
-    my $class = shift;
-    return bless {}, $class;
-}
-
-sub savepoint {
-}
-
-sub release {
-}
-
-sub rollback_to {
-}
-
-package DBIx::ThinSQL::Driver::SQLite;
-use strict;
-use warnings;
-
-our @ISA = ('DBIx::ThinSQL::Driver');
-
-sub savepoint {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->do( 'SAVEPOINT ' . $name );
-}
-
-sub release {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->do( 'RELEASE ' . $name );
-}
-
-sub rollback_to {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->do( 'ROLLBACK TO ' . $name );
-}
-
-package DBIx::ThinSQL::Driver::Pg;
-use strict;
-use warnings;
-
-our @ISA = ('DBIx::ThinSQL::Driver');
-
-sub savepoint {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->pg_savepoint($name);
-}
-
-sub release {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->pg_release($name);
-}
-
-sub rollback_to {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->pg_rollback_to($name);
 }
 
 1;

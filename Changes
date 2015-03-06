@@ -1,40 +1,40 @@
-0.0.32 (2014-10-30)
+0.0.33_1 (2015-03-06)
 
     API / Behaviour Changes:
         - None.
 
     New Features:
-        - New db->xvals() and sth->vals() methods.
-        - LIKE / NOT LIKE support in HASHrefs.
+        - None.
 
     Enhancements:
-        - None.
+        - Move driver modules into seperate files (thanks to reneeb via
+          CPAN Challenge).
+        - Fleshed out the TODO file.
+        - Cleaned up share directory handling
+        - New development branch naming scheme documented in
+          README.development
+        - Cleaned up this file to remove lots of empty noise lines.
+
+    Bug Fixes:
+        - Write NULLs out explicitly instead of binding them. Lets
+          "where => {col => undef}" work on PostgreSQL.
+
+0.0.32 (2014-10-30)
+
+    New Features:
+        - New db->xvals() and sth->vals() methods.
+        - LIKE / NOT LIKE support in HASHrefs.
 
     Bug Fixes:
         - Do not attempt to ROLLBACK or RELEASE inside a transaction.
 
 0.0.30 (2014-09-26)
 
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
-
     Bug Fixes:
         - Make xarrayref() and xhashref() return an empty list () in
           list context when there are no rows.
 
 0.0.28 (2014-09-23)
-
-    API Changes:
-       - None.
-
-    New Features:
-       - None.
 
     Enhancements:
        - HASHref columns (for VALUES or SET or WHERE) are now sorted
@@ -45,17 +45,8 @@
 
 0.0.26 (2014-09-10)
 
-    API Changes:
-        - None.
-
     New Features:
         - Accept "column !" in hashref keys to simulate not-equals.
-
-    Enhancements:
-        - None.
-
-    Bug Fixes:
-        - None.
 
 0.0.24 (2014-08-30)
 
@@ -73,12 +64,6 @@
             xval() returns a single scalar
             xlist() returns first row as a list
 
-   Enhancements:
-      - None.
-
-   Bug Fixes:
-      - None.
-
 0.0.22 (2014-06-30)
 
    API Changes:
@@ -86,36 +71,12 @@
          rows. Callers can check for definedness if need be before
          looping.
 
-   New Features:
-      - None.
-
-   Enhancements:
-      - None.
-
-   Bug Fixes:
-      - None.
-
 0.0.20 (2014-06-13)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
 
     Bug Fixes:
         - Translate arrayrefs as "IN (?,?)" for ON hashrefs
 
 0.0.18 (2014-04-10)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Remove unecessary subtest() calls in tests
@@ -126,25 +87,10 @@
 
 0.0.16 (2014-04-07)
 
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
-
     Bug Fixes:
         - Include a proper MANIFEST (0.0.14 was broken).
 
 0.0.14 (2014-04-07)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Add UPDATE ... SET support
@@ -157,12 +103,6 @@
         - Correctly handle SCALAR refs in VALUES hashrefs
 
 0.0.12 (2013-12-26)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Insert DEFAULT VALUES when given empty structures
@@ -187,13 +127,7 @@
         - Remove hack to make SQLite sequences work, replaced by
           "create_sqlite_sequence" function in DBIx::ThinSQL::SQLite.
 
-    Bug Fixes:
-        - None.
-
 0.0.8 (2013-06-11)
-
-    API Changes:
-        - None.
 
     New Features:
         - New log_debug() method for SELECTing straight to Log::Any
@@ -203,13 +137,7 @@
         - Support for [insert_info => ARRAYREF] constructs
         - Interpret SCALAR references in HASH values as raw SQL
 
-    Bug Fixes:
-        - None.
-
 0.0.6 (2013-05-27)
-
-    API Changes:
-        - None.
 
     New Features:
         - Sub-query support via the sq() function
@@ -224,15 +152,6 @@
         - Skip tests in Deploy.t when no valid handles available
 
 0.0.4 (2013-05-20)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
 
     Bug Fixes:
         - Don't include a blib/ directory in the distribution.
