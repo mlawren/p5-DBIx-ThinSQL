@@ -9,9 +9,7 @@ use Exporter::Tidy default => [
 use File::chdir;
 use Path::Tiny;
 
-BEGIN {
-    our $SHARE_DIR = path('share')->absolute;
-}
+$DBIx::ThinSQL::SHARE_DIR = path('share')->absolute;
 
 sub run_in_tempdir (&) {
     my $sub = shift;

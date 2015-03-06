@@ -8,20 +8,13 @@ use DBIx::ThinSQL::Deploy;
 our $VERSION = '0.0.33_1';
 
 sub _doit {
-    my $self = shift;
-    my $type = shift;
+    my $self   = shift;
+    my $type   = shift;
+    my $driver = $self->{Driver}->{Name};
+    my $file   = $self->share_dir->child( 'Drop', $driver, $type . '.sql' );
 
-    my $driver    = $self->{Driver}->{Name};
-    my $share_dir = $Test::DBIx::ThinSQL::SHARE_DIR
-      || dist_dir('DBIx-ThinSQL');
-
-    my $file = path( $share_dir, 'Drop', $driver, $type . '.sql' );
-    if ( !-f $file ) {
-        require Carp;
-        Carp::croak "Drop $type for driver $driver is unsupported.";
-    }
-
-    return $self->run_file($file);
+    return $self->run_file($file) if -f $file;
+    Carp::croak "Drop $type for driver $driver is unsupported.";
 }
 
 sub DBIx::ThinSQL::db::drop_indexes {

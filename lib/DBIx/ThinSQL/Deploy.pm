@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use Log::Any qw/$log/;
 use Carp qw/croak carp confess/;
-use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 
 our $VERSION = '0.0.33_1';
@@ -163,14 +162,8 @@ sub _setup_deploy {
           or croak 'Driver not supported for deploy: ' . $driver;
         $self->run_sql($sql);
     }
-    elsif ( my $share = $Test::DBIx::ThinSQL::SHARE_DIR ) {
-        $self->run_dir( $share->child( 'Deploy', $driver ) );
-    }
-    else {
-        $self->run_dir( path( dist_dir('DBIx-ThinSQL'), 'Deploy', $driver ) );
-    }
 
-    return;
+    return $self->run_dir( $self->share_dir->child( 'Deploy', $driver ) );
 }
 
 sub last_deploy_id {
