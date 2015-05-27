@@ -181,6 +181,10 @@ statement handle.
 
 Like C<dump> but sends the results to L<Log::Any> C<debug()>.
 
+=item log_warn( $sql, [ @bind_values ] )
+
+Like C<dump> but displays the results using Perl's C<warn> function.
+
 =back
 
 =head1 STH METHODS

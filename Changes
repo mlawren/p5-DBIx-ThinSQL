@@ -4,7 +4,8 @@
         - None.
 
     New Features:
-        - None.
+        - New "log_warn" method for "warn"ing output of statements.
+          This will be used by DBIx::ThinSQL::SQLite.
 
     Enhancements:
         - Move driver modules into seperate files (thanks to reneeb via
