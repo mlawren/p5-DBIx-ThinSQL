@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Upgrade included Module::Install to 1.16
 
     Bug Fixes:
         - None.
