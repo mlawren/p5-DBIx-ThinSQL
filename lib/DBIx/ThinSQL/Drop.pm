@@ -5,7 +5,7 @@ use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 use DBIx::ThinSQL::Deploy;
 
-our $VERSION = '0.0.35_1';
+our $VERSION = '0.0.35_2';
 
 sub _doit {
     my $self   = shift;
