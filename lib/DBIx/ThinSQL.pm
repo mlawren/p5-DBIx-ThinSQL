@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.20';
+our $VERSION = '0.0.34';
 
 sub _ejoin {
     my $joiner = shift;
@@ -89,7 +89,8 @@ sub _ejoin {
         }
         elsif ( ref $item eq 'HASH' ) {
             my ( $i, @columns, @values );
-            while ( my ( $k, $v ) = each %$item ) {
+            foreach my $k ( sort keys %$item ) {
+                my $v = $item->{$k};
                 push( @columns, $k );    # qi()?
                 if ( ref $v eq 'SCALAR' ) {
                     push( @values, $$v );
@@ -105,18 +106,30 @@ sub _ejoin {
             }
             push( @tokens, ' ' );    #$prefix2 );
             while ( $i-- ) {
+                my $like = $columns[0] =~ s/\s+like$/ LIKE /i ? 1 : 0;
+
+                my $not_like =
+                  $columns[0] =~ s/\s+(!|not)\s*like$/ NOT LIKE /i ? 1 : 0;
+
+                my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
+
                 push( @tokens, shift @columns );
                 if ( ref $values[0] eq 'ARRAY' ) {
 
                     push( @tokens,
+                        $not ? ' NOT' : '',
                         ' IN (', _ejoin( ',', @{ shift @values } ),
                         ')', ' AND ' );
                 }
                 elsif ( !ref $values[0] || defined $values[0]->val ) {
-                    push( @tokens, ' = ', shift @values, ' AND ' );
+                    push( @tokens, $not ? ' != ' : ' = ' )
+                      unless $like or $not_like;
+
+                    push( @tokens, shift @values, ' AND ' );
                 }
                 else {
-                    push( @tokens, ' IS ', shift @values, ' AND ' );
+                    push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL',
+                        ' AND ' );
                 }
             }
             pop @tokens;
@@ -200,7 +213,8 @@ sub _query {
                 if ($VALUES) {
                     if ( keys %$val ) {
                         my ( @columns, @values );
-                        while ( my ( $k, $v ) = each %$val ) {
+                        foreach my $k ( sort keys %$val ) {
+                            my $v = $val->{$k};
                             push( @columns, $k );    # qi()?
                             if ( ref $v eq 'SCALAR' ) {
                                 push( @values, $$v );
@@ -228,7 +242,8 @@ sub _query {
                 }
                 elsif ($SET) {
                     my ( $i, @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
+                    foreach my $k ( sort keys %$val ) {
+                        my $v = $val->{$k};
                         push( @columns, $k );    # qi()?
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
@@ -251,7 +266,8 @@ sub _query {
                 }
                 else {
                     my ( $i, @columns, @values );
-                    while ( my ( $k, $v ) = each %$val ) {
+                    foreach my $k ( sort keys %$val ) {
+                        my $v = $val->{$k};
                         push( @columns, $k );    # qi()?
                         if ( ref $v eq 'SCALAR' ) {
                             push( @values, $$v );
@@ -267,17 +283,31 @@ sub _query {
                     }
                     push( @tokens, $prefix2 );
                     while ( $i-- ) {
+                        my $like = $columns[0] =~ s/\s+like$/ LIKE /i ? 1 : 0;
+
+                        my $not_like =
+                          $columns[0] =~ s/\s+(!|not)\s*like$/ NOT LIKE /i
+                          ? 1
+                          : 0;
+
+                        my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
                         push( @tokens, shift @columns );
                         if ( ref $values[0] eq 'ARRAY' ) {
                             push( @tokens,
+                                $not ? ' NOT' : '',
                                 ' IN (', _ejoin( ',', @{ shift @values } ),
                                 ')', ' AND ' );
                         }
                         elsif ( !ref $values[0] || defined $values[0]->val ) {
-                            push( @tokens, ' = ', shift @values, ' AND ' );
+                            push( @tokens, $not ? ' != ' : ' = ' )
+                              unless $like or $not_like;
+
+                            push( @tokens, shift @values, ' AND ' );
                         }
                         else {
-                            push( @tokens, ' IS ', shift @values, ' AND ' );
+                            push( @tokens,
+                                ' IS ', $not ? 'NOT NULL' : 'NULL',
+                                ' AND ' );
                         }
                     }
                     pop @tokens;
@@ -316,9 +346,20 @@ use strict;
 use warnings;
 use Carp ();
 use Log::Any '$log';
+use DBIx::ThinSQL::Driver;
 
 our @ISA = qw(DBI::db);
 our @CARP_NOT;
+
+sub share_dir {
+    require Path::Tiny;
+
+    return Path::Tiny::path($DBIX::ThinSQL::SHARE_DIR)
+      if defined $DBIX::ThinSQL::SHARE_DIR;
+
+    require File::ShareDir;
+    return Path::Tiny::path( File::ShareDir::dist_dir('DBIx-ThinSQL') );
+}
 
 sub _sql_bv {
     my $self     = shift;
@@ -416,6 +457,19 @@ sub log_debug {
     $log->debug($out);
 }
 
+sub log_warn {
+    my $self = shift;
+    my $sql  = (shift) . "\n";
+
+    my $sth = $self->prepare( $sql . ';' );
+    $sth->execute(@_);
+
+    my $out = join( ', ', @{ $sth->{NAME} } ) . "\n";
+    $out .= '  ' . ( '-' x length $out ) . "\n";
+    $out .= '  ' . DBI::neat_list($_) . "\n" for @{ $sth->fetchall_arrayref };
+    warn $out;
+}
+
 sub dump {
     my $self = shift;
     my $sth  = $self->prepare(shift);
@@ -442,6 +496,13 @@ sub xval {
     return;
 }
 
+sub xvals {
+    my $self = shift;
+    my $sth  = $self->xprepare(@_);
+    $sth->execute;
+    return $sth->vals;
+}
+
 sub xlist {
     my $self = shift;
 
@@ -461,7 +522,9 @@ sub xarrayref {
     $sth->execute;
     my $ref = $sth->arrayref;
     $sth->finish;
-    return $ref;
+
+    return $ref if $ref;
+    return;
 }
 
 sub xarrayrefs {
@@ -481,7 +544,8 @@ sub xhashref {
     my $ref = $sth->hashref;
     $sth->finish;
 
-    return $ref;
+    return $ref if $ref;
+    return;
 }
 
 sub xhashrefs {
@@ -503,7 +567,10 @@ sub txn {
 
     $driver ||= $self->{private_DBIx_ThinSQL_driver} = do {
         my $class = 'DBIx::ThinSQL::Driver::' . $self->{Driver}->{Name};
-        eval { $class->new } || DBIx::ThinSQL::Driver->new;
+        ( my $path = $class ) =~ s{::}{/}g;
+        $path .= '.pm';
+
+        eval { require $path; $class->new } || DBIx::ThinSQL::Driver->new;
     };
 
     my $current;
@@ -545,7 +612,7 @@ sub txn {
             $self->commit unless $self->{AutoCommit};
         }
         else {
-            $driver->release( $self, 'txn' . $txn );
+            $driver->release( $self, 'txn' . $txn ) unless $self->{AutoCommit};
         }
 
     };
@@ -565,12 +632,11 @@ sub txn {
                 # If the transaction failed at COMMIT, then we can no
                 # longer roll back. Maybe put this around the eval for
                 # the RELEASE case as well??
-                if ( !$self->{AutoCommit} ) {
-                    $self->rollback unless $self->{AutoCommit};
-                }
+                $self->rollback unless $self->{AutoCommit};
             }
             else {
-                $driver->rollback_to( $self, 'txn' . $txn );
+                $driver->rollback_to( $self, 'txn' . $txn )
+                  unless $self->{AutoCommit};
             }
         };
 
@@ -595,6 +661,14 @@ sub val {
     my $self = shift;
     my $ref = $self->fetchrow_arrayref || return;
     return $ref->[0];
+}
+
+sub vals {
+    my $self = shift;
+    my $all = $self->fetchall_arrayref || return;
+    return unless @$all;
+    return map { $_->[0] } @$all if wantarray;
+    return [ map { $_->[0] } @$all ];
 }
 
 sub list {
@@ -735,78 +809,6 @@ sub as {
 sub tokens {
     my $self = shift;
     return @$self;
-}
-
-package DBIx::ThinSQL::Driver;
-use strict;
-use warnings;
-
-sub new {
-    my $class = shift;
-    return bless {}, $class;
-}
-
-sub savepoint {
-}
-
-sub release {
-}
-
-sub rollback_to {
-}
-
-package DBIx::ThinSQL::Driver::SQLite;
-use strict;
-use warnings;
-
-our @ISA = ('DBIx::ThinSQL::Driver');
-
-sub savepoint {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->do( 'SAVEPOINT ' . $name );
-}
-
-sub release {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->do( 'RELEASE ' . $name );
-}
-
-sub rollback_to {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->do( 'ROLLBACK TO ' . $name );
-}
-
-package DBIx::ThinSQL::Driver::Pg;
-use strict;
-use warnings;
-
-our @ISA = ('DBIx::ThinSQL::Driver');
-
-sub savepoint {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->pg_savepoint($name);
-}
-
-sub release {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->pg_release($name);
-}
-
-sub rollback_to {
-    my $self = shift;
-    my $dbh  = shift;
-    my $name = shift;
-    $dbh->pg_rollback_to($name);
 }
 
 1;
