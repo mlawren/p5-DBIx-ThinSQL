@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.33_1';
+our $VERSION = '0.0.34';
 
 sub _ejoin {
     my $joiner = shift;
@@ -455,6 +455,19 @@ sub log_debug {
     $out .= '  ' . ( '-' x length $out ) . "\n";
     $out .= '  ' . DBI::neat_list($_) . "\n" for @{ $sth->fetchall_arrayref };
     $log->debug($out);
+}
+
+sub log_warn {
+    my $self = shift;
+    my $sql  = (shift) . "\n";
+
+    my $sth = $self->prepare( $sql . ';' );
+    $sth->execute(@_);
+
+    my $out = join( ', ', @{ $sth->{NAME} } ) . "\n";
+    $out .= '  ' . ( '-' x length $out ) . "\n";
+    $out .= '  ' . DBI::neat_list($_) . "\n" for @{ $sth->fetchall_arrayref };
+    warn $out;
 }
 
 sub dump {

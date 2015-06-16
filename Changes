@@ -1,10 +1,11 @@
-0.0.33_1 (2015-03-06)
+0.0.34 (2015-06-16)
 
     API / Behaviour Changes:
         - None.
 
     New Features:
-        - None.
+        - New "log_warn" method for "warn"ing output of statements.
+          This will be used by DBIx::ThinSQL::SQLite.
 
     Enhancements:
         - Move driver modules into seperate files (thanks to reneeb via

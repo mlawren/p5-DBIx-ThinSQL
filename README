@@ -2,7 +2,7 @@ NAME
     DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 VERSION
-    0.0.33_1 (2015-03-06) development release.
+    0.0.34 (2015-06-16) development release.
 
 SYNOPSIS
         use strict;
@@ -158,6 +158,9 @@ DBH METHODS
 
     log_debug( $sql, [ @bind_values ] )
         Like "dump" but sends the results to Log::Any "debug()".
+
+    log_warn( $sql, [ @bind_values ] )
+        Like "dump" but displays the results using Perl's "warn" function.
 
 STH METHODS
     val -> SCALAR
