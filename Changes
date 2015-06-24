@@ -1,3 +1,18 @@
+0.0.38 (2015-06-24)
+
+    API / Behaviour Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - NULL conditions in WHERE statements would cause any following
+          values to also be NULL.
+
 0.0.36 (2015-06-19)
 
     API / Behaviour Changes:
