@@ -5,7 +5,7 @@ use Log::Any qw/$log/;
 use Carp qw/croak carp confess/;
 use Path::Tiny;
 
-our $VERSION = '0.0.38';
+our $VERSION = '0.0.39_1';
 
 sub _split_sql {
     my $input = shift;
