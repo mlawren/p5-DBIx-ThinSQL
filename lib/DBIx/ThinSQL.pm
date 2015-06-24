@@ -130,6 +130,7 @@ sub _ejoin {
                 else {
                     push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL',
                         ' AND ' );
+                    shift @values;
                 }
             }
             pop @tokens;
@@ -308,6 +309,7 @@ sub _query {
                             push( @tokens,
                                 ' IS ', $not ? 'NOT NULL' : 'NULL',
                                 ' AND ' );
+                            shift @values;
                         }
                     }
                     pop @tokens;

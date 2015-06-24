@@ -10,7 +10,8 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - NULL conditions in WHERE statements would cause any following
+          values to also be NULL.
 
 0.0.36 (2015-06-19)
 
