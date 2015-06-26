@@ -113,6 +113,8 @@ sub _ejoin {
 
                 my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
 
+                my $gtlt = $columns[0] =~ s/(\s+[><]=?)$/$1 / ? 1 : 0;
+
                 push( @tokens, shift @columns );
                 if ( ref $values[0] eq 'ARRAY' ) {
 
@@ -123,7 +125,9 @@ sub _ejoin {
                 }
                 elsif ( !ref $values[0] || defined $values[0]->val ) {
                     push( @tokens, $not ? ' != ' : ' = ' )
-                      unless $like or $not_like;
+                      unless $like
+                      or $not_like
+                      or $gtlt;
 
                     push( @tokens, shift @values, ' AND ' );
                 }
@@ -291,7 +295,8 @@ sub _query {
                           ? 1
                           : 0;
 
-                        my $not = $columns[0] =~ s/\s+!$// ? 1 : 0;
+                        my $not  = $columns[0] =~ s/\s+!$//           ? 1 : 0;
+                        my $gtlt = $columns[0] =~ s/(\s+[><]=?)$/$1 / ? 1 : 0;
                         push( @tokens, shift @columns );
                         if ( ref $values[0] eq 'ARRAY' ) {
                             push( @tokens,
@@ -301,7 +306,9 @@ sub _query {
                         }
                         elsif ( !ref $values[0] || defined $values[0]->val ) {
                             push( @tokens, $not ? ' != ' : ' = ' )
-                              unless $like or $not_like;
+                              unless $like
+                              or $not_like
+                              or $gtlt;
 
                             push( @tokens, shift @values, ' AND ' );
                         }

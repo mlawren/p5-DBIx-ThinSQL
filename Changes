@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Support use of >, >=, < and <= in WHERE/ON conditions.
 
     Bug Fixes:
         - None.
