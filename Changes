@@ -1,3 +1,17 @@
+0.0.36 (2015-06-19)
+
+    API / Behaviour Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Upgrade included Module::Install to 1.16
+
+    Bug Fixes:
+        - None.
+
 0.0.34 (2015-06-16)
 
     API / Behaviour Changes:
