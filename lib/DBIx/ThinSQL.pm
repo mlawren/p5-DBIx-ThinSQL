@@ -70,7 +70,7 @@ use Exporter::Tidy
   };
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.36';
+our $VERSION = '0.0.38';
 
 sub _ejoin {
     my $joiner = shift;
@@ -130,6 +130,7 @@ sub _ejoin {
                 else {
                     push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL',
                         ' AND ' );
+                    shift @values;
                 }
             }
             pop @tokens;
@@ -308,6 +309,7 @@ sub _query {
                             push( @tokens,
                                 ' IS ', $not ? 'NOT NULL' : 'NULL',
                                 ' AND ' );
+                            shift @values;
                         }
                     }
                     pop @tokens;
