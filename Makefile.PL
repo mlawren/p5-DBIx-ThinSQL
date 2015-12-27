@@ -9,7 +9,7 @@ bugtracker 'https://github.com/mlawren/p5-DBIx-ThinSQL/issues';
 repository 'git://github.com/mlawren/p5-DBIx-ThinSQL.git';
 
 all_from 'lib/DBIx/ThinSQL.pm';
-readme_from 'lib/DBIx/ThinSQL.pod';
+readme_from 'lib/DBIx/ThinSQL.pm';
 
 requires 'DBI'            => 0;
 requires 'Exporter::Tidy' => 0;
