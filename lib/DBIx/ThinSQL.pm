@@ -868,7 +868,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.41_1 (yyyy-mm-dd) development release.
+0.0.41_1 (2015-12-28) development release.
 
 =head1 SYNOPSIS
 
