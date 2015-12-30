@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Ignore { col => [] } constructs
 
     Bug Fixes:
         - None.

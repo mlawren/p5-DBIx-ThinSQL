@@ -651,17 +651,19 @@ sub new {
                 my $not      = $col =~ s/\s*!$//;
                 my $gtlt     = $col =~ s/(\s+[><]=?)$/$1 /;
 
-                push( @tokens, $col );
                 if ( !defined $val ) {
+                    push( @tokens, $col );
                     push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL' );
                 }
-                elsif ( ref $val eq 'ARRAY' ) {
+                elsif ( ref $val eq 'ARRAY' and @$val ) {
+                    push( @tokens, $col );
                     push( @tokens, ' NOT' ) if $not;
                     push( @tokens, ' IN (', map { $_, ',' } @{$val} );
                     pop(@tokens);
                     push( @tokens, ')' );
                 }
                 else {
+                    push( @tokens, $col );
                     push( @tokens, $not ? ' != ' : ' = ' )
                       unless $like
                       or $not_like
