@@ -4,7 +4,7 @@
         - None.
 
     New Features:
-        - None.
+        - New throw_error() method for overriding database errors
 
     Enhancements:
         - Ignore { col => [] } constructs
