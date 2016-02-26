@@ -135,6 +135,7 @@ sub sql_bv {
     elsif ( $ref eq 'DBIx::ThinSQL::query' ) {
         my $bracket = length($prefix) ? '(' : '';
         foreach my $pair ( $val->tokens ) {
+            $$sql .= "\n" if $pair->[0] =~ /UNION/;
             $$sql .= ( $bracket || $prefix ) . $pair->[0] . "\n" . $prefix2
               if length( $pair->[0] );
             $self->sql_bv( $sql, $bv, $pair->[1], $prefix2 );
