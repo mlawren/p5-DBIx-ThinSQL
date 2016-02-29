@@ -10,7 +10,7 @@
         - Ignore { col => [] } constructs
 
     Bug Fixes:
-        - None.
+        - Only test with DBD::SQLite as DBD::DBM is fragile
 
     Dependencies:
         - None.
