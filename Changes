@@ -1,3 +1,14 @@
+0.0.42 (2016-02-29)
+
+    New Features:
+        - New throw_error() method for overriding database errors
+
+    Enhancements:
+        - Ignore { col => [] } constructs
+
+    Bug Fixes:
+        - Only test with DBD::SQLite as DBD::DBM is fragile
+
 0.0.41_1 (2015-12-28)
 
     API / Behaviour Changes:

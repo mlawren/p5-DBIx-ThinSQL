@@ -6,6 +6,9 @@ use Test::DBIx::ThinSQL qw/run_in_tempdir/;
 use Test::Fatal qw/exception/;
 use Test::More;
 
+plan skip_all => 'only test with DBD::SQLite'
+  unless eval { require DBD::SQLite };
+
 # now let's make a database check our syntax
 run_in_tempdir {
 

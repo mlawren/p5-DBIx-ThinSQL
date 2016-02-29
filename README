@@ -2,7 +2,7 @@ NAME
     DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 VERSION
-    0.0.41_1 (2015-12-28) development release.
+    0.0.42 (2016-02-29) development release.
 
 SYNOPSIS
         use strict;
@@ -117,6 +117,13 @@ DBH METHODS
         Returns the path to the distribution share directory. If
         $DBIx::ThinSQL::SHARE_DIR is set then that value will be returned
         instead of the default method which uses File::ShareDir.
+
+    throw_error
+        If DBIX::ThinSQL or a statement raises an exception then the
+        "throw_error()" method will be called. By default it just croaks but
+        classes that inherit from DBIx::ThinSQL can override it. The
+        original use case was to turn database error text into blessed
+        objects.
 
     xprepare
         Does a prepare but knows about bind values and quoted values.

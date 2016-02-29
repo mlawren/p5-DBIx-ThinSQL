@@ -27,7 +27,7 @@ use Exporter::Tidy
   ];
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.41_1';
+our $VERSION = '0.0.42';
 
 sub ejoin {
     my $joiner = shift;
@@ -113,6 +113,11 @@ sub share_dir {
     return Path::Tiny::path( File::ShareDir::dist_dir('DBIx-ThinSQL') );
 }
 
+sub throw_error {
+    my $self = shift;
+    Carp::croak(@_);
+}
+
 sub sql_bv {
     my $self    = shift;
     my $sql     = shift;
@@ -130,6 +135,7 @@ sub sql_bv {
     elsif ( $ref eq 'DBIx::ThinSQL::query' ) {
         my $bracket = length($prefix) ? '(' : '';
         foreach my $pair ( $val->tokens ) {
+            $$sql .= "\n" if $pair->[0] =~ /UNION/;
             $$sql .= ( $bracket || $prefix ) . $pair->[0] . "\n" . $prefix2
               if length( $pair->[0] );
             $self->sql_bv( $sql, $bv, $pair->[1], $prefix2 );
@@ -237,7 +243,7 @@ sub xprepare {
         $sth;
     };
 
-    Carp::croak($@) if $@;
+    $self->throw_error($@) if $@;
 
     return $sth;
 }
@@ -263,7 +269,7 @@ sub xdo {
         $sth;
     };
 
-    Carp::croak($@) if $@;
+    $self->throw_error($@) if $@;
 
     return $sth->execute;
 }
@@ -465,12 +471,12 @@ sub txn {
             }
         };
 
-        Carp::croak(
+        $self->throw_error(
             $error . "\nAdditionally, an error occured during
                   rollback:\n$@"
         ) if $@;
 
-        Carp::croak($error);
+        $self->throw_error($error);
     }
 
     return $wantarray ? @result : $result;
@@ -651,17 +657,19 @@ sub new {
                 my $not      = $col =~ s/\s*!$//;
                 my $gtlt     = $col =~ s/(\s+[><]=?)$/$1 /;
 
-                push( @tokens, $col );
                 if ( !defined $val ) {
+                    push( @tokens, $col );
                     push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL' );
                 }
-                elsif ( ref $val eq 'ARRAY' ) {
+                elsif ( ref $val eq 'ARRAY' and @$val ) {
+                    push( @tokens, $col );
                     push( @tokens, ' NOT' ) if $not;
                     push( @tokens, ' IN (', map { $_, ',' } @{$val} );
                     pop(@tokens);
                     push( @tokens, ')' );
                 }
                 else {
+                    push( @tokens, $col );
                     push( @tokens, $not ? ' != ' : ' = ' )
                       unless $like
                       or $not_like
@@ -868,7 +876,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.41_1 (2015-12-28) development release.
+0.0.42 (2016-02-29) development release.
 
 =head1 SYNOPSIS
 
@@ -991,6 +999,13 @@ L<DBIx::Connector> to get nice transaction support.
 Returns the path to the distribution share directory. If
 C<$DBIx::ThinSQL::SHARE_DIR> is set then that value will be returned
 instead of the default method which uses L<File::ShareDir>.
+
+=item throw_error
+
+If B<DBIX::ThinSQL> or a statement raises an exception then the
+C<throw_error()> method will be called. By default it just croaks but
+classes that inherit from B<DBIx::ThinSQL> can override it. The
+original use case was to turn database error text into blessed objects.
 
 =item xprepare
 
