@@ -1,8 +1,5 @@
 0.0.42 (yyyy-mm-dd)
 
-    API / Behaviour Changes:
-        - None.
-
     New Features:
         - New throw_error() method for overriding database errors
 
@@ -11,9 +8,6 @@
 
     Bug Fixes:
         - Only test with DBD::SQLite as DBD::DBM is fragile
-
-    Dependencies:
-        - None.
 
 0.0.41_1 (2015-12-28)
 
