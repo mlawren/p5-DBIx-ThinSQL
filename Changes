@@ -10,7 +10,7 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Don't index new non-public packages
 
     Dependencies:
         - None.
