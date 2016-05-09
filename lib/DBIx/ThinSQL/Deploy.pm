@@ -160,7 +160,7 @@ sub _setup_deploy {
         my $src = 'auto/share/dist/DBIx-ThinSQL/Deploy/' . $driver . '.sql';
         my $sql = static::find($src)
           or croak 'Driver not supported for deploy: ' . $driver;
-        $self->run_sql($sql);
+        return $self->run_sql($sql);
     }
 
     return $self->run_dir( $self->share_dir->child( 'Deploy', $driver ) );

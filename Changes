@@ -11,6 +11,7 @@
 
     Bug Fixes:
         - Don't index new non-public packages
+        - Fix Deploy under App::staticperl builds
 
     Dependencies:
         - None.
