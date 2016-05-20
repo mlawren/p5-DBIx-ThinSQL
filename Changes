@@ -1,4 +1,4 @@
-0.0.43_1 (yyyy-mm-dd)
+0.0.44 (yyyy-mm-dd)
 
     Bug Fixes:
         - Don't index new non-public packages
