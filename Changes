@@ -1,3 +1,9 @@
+0.0.44 (2016-05-20)
+
+    Bug Fixes:
+        - Don't index new non-public packages
+        - Fix Deploy under App::staticperl builds
+
 0.0.42 (2016-02-29)
 
     New Features:

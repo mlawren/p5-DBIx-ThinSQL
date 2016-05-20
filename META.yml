@@ -28,12 +28,17 @@ no_index:
     - DBIx::ThinSQL::Driver
     - DBIx::ThinSQL::Driver::Pg
     - DBIx::ThinSQL::Driver::SQLite
-    - DBIx::ThinSQL::_bv
-    - DBIx::ThinSQL::_expr
-    - DBIx::ThinSQL::_qi
-    - DBIx::ThinSQL::_qv
+    - DBIx::ThinSQL::bind_value
+    - DBIx::ThinSQL::case
     - DBIx::ThinSQL::db
+    - DBIx::ThinSQL::expr
+    - DBIx::ThinSQL::list
+    - DBIx::ThinSQL::query
+    - DBIx::ThinSQL::quote_identifier
+    - DBIx::ThinSQL::quote_value
     - DBIx::ThinSQL::st
+    - DBIx::ThinSQL::table
+    - DBIx::ThinSQL::values
 requires:
   DBI: 0
   Exporter::Tidy: 0
@@ -45,4 +50,4 @@ resources:
   homepage: https://github.com/mlawren/p5-DBIx-ThinSQL
   license: http://opensource.org/licenses/gpl-3.0.html
   repository: git://github.com/mlawren/p5-DBIx-ThinSQL.git
-version: 0.0.42
+version: 0.0.44
