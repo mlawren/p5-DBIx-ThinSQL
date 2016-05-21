@@ -13,7 +13,7 @@
         - None.
 
     Dependencies:
-        - None.
+        - Don't use "//" for perl 5.6 support
 
 0.0.44 (2016-05-20)
 

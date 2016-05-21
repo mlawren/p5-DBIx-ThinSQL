@@ -119,12 +119,15 @@ sub throw_error {
 }
 
 sub sql_bv {
-    my $self    = shift;
-    my $sql     = shift;
-    my $bv      = shift;
-    my $val     = shift;
+    my $self   = shift;
+    my $sql    = shift;
+    my $bv     = shift;
+    my $val    = shift;
+    my $prefix = shift;
+
+    $prefix = '' unless length($prefix);
+
     my $ref     = ref $val;
-    my $prefix  = shift // '';
     my $prefix2 = $prefix . '    ';
 
     # When we call ourself we already have a ref
