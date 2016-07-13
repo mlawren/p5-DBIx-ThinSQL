@@ -139,7 +139,10 @@ sub sql_bv {
         my $bracket = length($prefix) ? '(' : '';
         foreach my $pair ( $val->tokens ) {
             $$sql .= "\n" if $pair->[0] =~ /UNION/;
-            $$sql .= ( $bracket || $prefix ) . $pair->[0] . "\n" . $prefix2
+            my $join_on = length( $pair->[0] )
+              && ( $pair->[0] =~ m/(JOIN)|(ON)/ ) ? '  ' : '';
+            $$sql .=
+              ( $bracket || $prefix . $join_on ) . $pair->[0] . "\n" . $prefix2
               if length( $pair->[0] );
             $self->sql_bv( $sql, $bv, $pair->[1], $prefix2 );
             $$sql .= "\n" if length( $pair->[0] ) or length( $pair->[1] );

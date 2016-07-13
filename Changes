@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Indent JOIN and ON statements by two spaces.
 
     Bug Fixes:
         - None.
