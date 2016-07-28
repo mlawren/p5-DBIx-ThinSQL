@@ -239,9 +239,12 @@ sub xprepare {
     local $self->{PrintError}         = 0;
     local $self->{ShowErrorStatement} = 1;
 
+    my $prepare_ok;
     my $sth = eval {
         my $sth = $self->prepare($sql);
-        my $i   = 1;
+        $prepare_ok = 1;
+
+        my $i = 1;
         foreach my $bv (@bv) {
             $sth->bind_param( $i++, $bv->for_bind_param );
         }
@@ -249,7 +252,10 @@ sub xprepare {
         $sth;
     };
 
-    $self->throw_error($@) if $@;
+    if ($@) {
+        $log->debug($sql) unless $prepare_ok;
+        $self->throw_error($@);
+    }
 
     return $sth;
 }

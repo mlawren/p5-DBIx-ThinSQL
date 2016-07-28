@@ -8,6 +8,7 @@
 
     Enhancements:
         - Indent JOIN and ON statements by two spaces.
+        - Log SQL statements when the prepare() step fails
 
     Bug Fixes:
         - None.
