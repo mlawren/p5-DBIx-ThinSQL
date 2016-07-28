@@ -1,4 +1,4 @@
-0.0.45_1 (yyyy-mm-dd)
+0.0.45_1 (2016-07-28)
 
     Enhancements:
         - Indent JOIN and ON statements by two spaces.
