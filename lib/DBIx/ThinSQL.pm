@@ -663,25 +663,24 @@ sub new {
 
             foreach my $col (@cols) {
                 my $val = $narg->{$col};
+                print "$col $val\n";
 
                 my $like     = $col =~ s/\s+like$/ LIKE /i;
                 my $not_like = $col =~ s/\s+(!|not)\s*like$/ NOT LIKE /i;
                 my $not      = $col =~ s/\s*!$//;
                 my $gtlt     = $col =~ s/(\s+[><]=?)$/$1 /;
 
+                push( @tokens, $col );
                 if ( !defined $val ) {
-                    push( @tokens, $col );
                     push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL' );
                 }
-                elsif ( ref $val eq 'ARRAY' and @$val ) {
-                    push( @tokens, $col );
+                elsif ( ref $val eq 'ARRAY' ) {
                     push( @tokens, ' NOT' ) if $not;
-                    push( @tokens, ' IN (', map { $_, ',' } @{$val} );
-                    pop(@tokens);
+                    push( @tokens, ' IN (', map { $_, ',' } @$val );
+                    pop(@tokens) if @$val;
                     push( @tokens, ')' );
                 }
                 else {
-                    push( @tokens, $col );
                     push( @tokens, $not ? ' != ' : ' = ' )
                       unless $like
                       or $not_like
