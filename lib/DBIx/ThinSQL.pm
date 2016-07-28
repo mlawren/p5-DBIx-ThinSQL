@@ -663,7 +663,6 @@ sub new {
 
             foreach my $col (@cols) {
                 my $val = $narg->{$col};
-                print "$col $val\n";
 
                 my $like     = $col =~ s/\s+like$/ LIKE /i;
                 my $not_like = $col =~ s/\s+(!|not)\s*like$/ NOT LIKE /i;
