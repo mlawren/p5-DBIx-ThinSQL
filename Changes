@@ -9,6 +9,9 @@
         - Indent JOIN and ON statements by two spaces.
         - Log SQL statements when the prepare() step fails
 
+    Bug Fixes:
+        - Remove support for empty { col => [] } constructs
+
     Dependencies:
         - Don't use "//" for perl 5.6 support
 
