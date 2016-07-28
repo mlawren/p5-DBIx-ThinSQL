@@ -50,4 +50,4 @@ resources:
   homepage: https://github.com/mlawren/p5-DBIx-ThinSQL
   license: http://opensource.org/licenses/gpl-3.0.html
   repository: git://github.com/mlawren/p5-DBIx-ThinSQL.git
-version: 0.0.44
+version: 0.0.45_1
