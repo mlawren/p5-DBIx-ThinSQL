@@ -27,7 +27,7 @@ use Exporter::Tidy
   ];
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.45_1';
+our $VERSION = '0.0.45_2';
 
 sub ejoin {
     my $joiner = shift;
@@ -663,7 +663,6 @@ sub new {
 
             foreach my $col (@cols) {
                 my $val = $narg->{$col};
-                print "$col $val\n";
 
                 my $like     = $col =~ s/\s+like$/ LIKE /i;
                 my $not_like = $col =~ s/\s+(!|not)\s*like$/ NOT LIKE /i;
@@ -887,7 +886,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.45_1 (2016-07-28) development release.
+0.0.45_2 (2016-07-29) development release.
 
 =head1 SYNOPSIS
 

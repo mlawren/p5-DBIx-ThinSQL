@@ -1,8 +1,16 @@
+0.0.45_2 (2016-07-29)
+
+    Bug Fixes:
+        - Remove debugging print statement
+
 0.0.45_1 (2016-07-28)
 
     Enhancements:
         - Indent JOIN and ON statements by two spaces.
         - Log SQL statements when the prepare() step fails
+
+    Bug Fixes:
+        - Remove support for empty { col => [] } constructs
 
     Dependencies:
         - Don't use "//" for perl 5.6 support
