@@ -1,7 +1,7 @@
 use inc::Module::Install;
 
 name 'DBIx-ThinSQL';
-version '0.0.42';
+version '0.0.44';
 license 'gpl3';
 
 homepage 'https://github.com/mlawren/p5-DBIx-ThinSQL';
@@ -30,12 +30,17 @@ install_share 'share';
 no_index package => 'DBIx::ThinSQL::Driver';
 no_index package => 'DBIx::ThinSQL::Driver::Pg';
 no_index package => 'DBIx::ThinSQL::Driver::SQLite';
-no_index package => 'DBIx::ThinSQL::_bv';
-no_index package => 'DBIx::ThinSQL::_expr';
-no_index package => 'DBIx::ThinSQL::_qi';
-no_index package => 'DBIx::ThinSQL::_qv';
+no_index package => 'DBIx::ThinSQL::bind_value';
+no_index package => 'DBIx::ThinSQL::case';
 no_index package => 'DBIx::ThinSQL::db';
+no_index package => 'DBIx::ThinSQL::expr';
+no_index package => 'DBIx::ThinSQL::list';
+no_index package => 'DBIx::ThinSQL::query';
+no_index package => 'DBIx::ThinSQL::quote_identifier';
+no_index package => 'DBIx::ThinSQL::quote_value';
 no_index package => 'DBIx::ThinSQL::st';
+no_index package => 'DBIx::ThinSQL::table';
+no_index package => 'DBIx::ThinSQL::values';
 
 auto_install;
 

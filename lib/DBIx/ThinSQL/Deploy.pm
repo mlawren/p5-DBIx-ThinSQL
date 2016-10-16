@@ -5,7 +5,7 @@ use Log::Any qw/$log/;
 use Carp qw/croak carp confess/;
 use Path::Tiny;
 
-our $VERSION = '0.0.42';
+our $VERSION = '0.0.44';
 
 sub _split_sql {
     my $input = shift;
@@ -160,7 +160,7 @@ sub _setup_deploy {
         my $src = 'auto/share/dist/DBIx-ThinSQL/Deploy/' . $driver . '.sql';
         my $sql = static::find($src)
           or croak 'Driver not supported for deploy: ' . $driver;
-        $self->run_sql($sql);
+        return $self->run_sql($sql);
     }
 
     return $self->run_dir( $self->share_dir->child( 'Deploy', $driver ) );
