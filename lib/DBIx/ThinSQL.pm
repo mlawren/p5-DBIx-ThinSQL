@@ -27,7 +27,7 @@ use Exporter::Tidy
   ];
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.44';
+our $VERSION = '0.0.46';
 
 sub ejoin {
     my $joiner = shift;
@@ -119,12 +119,15 @@ sub throw_error {
 }
 
 sub sql_bv {
-    my $self    = shift;
-    my $sql     = shift;
-    my $bv      = shift;
-    my $val     = shift;
+    my $self   = shift;
+    my $sql    = shift;
+    my $bv     = shift;
+    my $val    = shift;
+    my $prefix = shift;
+
+    $prefix = '' unless length($prefix);
+
     my $ref     = ref $val;
-    my $prefix  = shift // '';
     my $prefix2 = $prefix . '    ';
 
     # When we call ourself we already have a ref
@@ -136,7 +139,10 @@ sub sql_bv {
         my $bracket = length($prefix) ? '(' : '';
         foreach my $pair ( $val->tokens ) {
             $$sql .= "\n" if $pair->[0] =~ /UNION/;
-            $$sql .= ( $bracket || $prefix ) . $pair->[0] . "\n" . $prefix2
+            my $join_on = length( $pair->[0] )
+              && ( $pair->[0] =~ m/(JOIN)|(ON)/ ) ? '  ' : '';
+            $$sql .=
+              ( $bracket || $prefix . $join_on ) . $pair->[0] . "\n" . $prefix2
               if length( $pair->[0] );
             $self->sql_bv( $sql, $bv, $pair->[1], $prefix2 );
             $$sql .= "\n" if length( $pair->[0] ) or length( $pair->[1] );
@@ -233,9 +239,12 @@ sub xprepare {
     local $self->{PrintError}         = 0;
     local $self->{ShowErrorStatement} = 1;
 
+    my $prepare_ok;
     my $sth = eval {
         my $sth = $self->prepare($sql);
-        my $i   = 1;
+        $prepare_ok = 1;
+
+        my $i = 1;
         foreach my $bv (@bv) {
             $sth->bind_param( $i++, $bv->for_bind_param );
         }
@@ -243,7 +252,10 @@ sub xprepare {
         $sth;
     };
 
-    $self->throw_error($@) if $@;
+    if ($@) {
+        $log->debug($sql) unless $prepare_ok;
+        $self->throw_error($@);
+    }
 
     return $sth;
 }
@@ -657,19 +669,17 @@ sub new {
                 my $not      = $col =~ s/\s*!$//;
                 my $gtlt     = $col =~ s/(\s+[><]=?)$/$1 /;
 
+                push( @tokens, $col );
                 if ( !defined $val ) {
-                    push( @tokens, $col );
                     push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL' );
                 }
-                elsif ( ref $val eq 'ARRAY' and @$val ) {
-                    push( @tokens, $col );
+                elsif ( ref $val eq 'ARRAY' ) {
                     push( @tokens, ' NOT' ) if $not;
-                    push( @tokens, ' IN (', map { $_, ',' } @{$val} );
-                    pop(@tokens);
+                    push( @tokens, ' IN (', map { $_, ',' } @$val );
+                    pop(@tokens) if @$val;
                     push( @tokens, ')' );
                 }
                 else {
-                    push( @tokens, $col );
                     push( @tokens, $not ? ' != ' : ' = ' )
                       unless $like
                       or $not_like
@@ -876,7 +886,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.44 (2016-05-20) development release.
+0.0.46 (2016-10-16) development release.
 
 =head1 SYNOPSIS
 

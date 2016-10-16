@@ -1,3 +1,24 @@
+0.0.46 (2016-10-16)
+
+    No changes from v0.0.45_2.
+
+0.0.45_2 (2016-07-29)
+
+    Bug Fixes:
+        - Remove debugging print statement
+
+0.0.45_1 (2016-07-28)
+
+    Enhancements:
+        - Indent JOIN and ON statements by two spaces.
+        - Log SQL statements when the prepare() step fails
+
+    Bug Fixes:
+        - Remove support for empty { col => [] } constructs
+
+    Dependencies:
+        - Don't use "//" for perl 5.6 support
+
 0.0.44 (2016-05-20)
 
     Bug Fixes:
@@ -17,42 +38,15 @@
 
 0.0.41_1 (2015-12-28)
 
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
     Enhancements:
         - Major refactoring
 
-    Bug Fixes:
-        - None.
-
 0.0.40 (2015-06-26)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Support use of >, >=, < and <= in WHERE/ON conditions.
 
-    Bug Fixes:
-        - None.
-
 0.0.38 (2015-06-24)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
 
     Bug Fixes:
         - NULL conditions in WHERE statements would cause any following
@@ -60,22 +54,10 @@
 
 0.0.36 (2015-06-19)
 
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
     Enhancements:
         - Upgrade included Module::Install to 1.16
 
-    Bug Fixes:
-        - None.
-
 0.0.34 (2015-06-16)
-
-    API / Behaviour Changes:
-        - None.
 
     New Features:
         - New "log_warn" method for "warn"ing output of statements.
@@ -114,9 +96,6 @@
     Enhancements:
        - HASHref columns (for VALUES or SET or WHERE) are now sorted
          so that statements are consistent between runs.
-
-    Bug Fixes:
-       - None.
 
 0.0.26 (2014-09-10)
 
