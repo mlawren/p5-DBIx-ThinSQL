@@ -4,7 +4,8 @@
         - None.
 
     New Features:
-        - None.
+        - New xprepare_cached() method that maps to the underlying
+          DBI prepare_cached one.
 
     Enhancements:
         - None.

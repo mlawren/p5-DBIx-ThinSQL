@@ -240,16 +240,20 @@ sub xprepare {
     local $self->{ShowErrorStatement} = 1;
 
     my $prepare_ok;
-    my $sth = eval {
-        my $sth = $self->prepare($sql);
+    my $sth;
+    my $prepare =
+      exists $self->{'_dbix_thinsql_prepare_cached'}
+      ? 'prepare_cached'
+      : 'prepare';
+
+    eval {
+        $sth        = $self->$prepare($sql);
         $prepare_ok = 1;
 
         my $i = 1;
         foreach my $bv (@bv) {
             $sth->bind_param( $i++, $bv->for_bind_param );
         }
-
-        $sth;
     };
 
     if ($@) {
@@ -260,29 +264,15 @@ sub xprepare {
     return $sth;
 }
 
+sub xprepare_cached {
+    my $self = shift;
+    local $self->{'_dbix_thinsql_prepare_cached'} = 1;
+    return $self->xprepare(@_);
+}
+
 sub xdo {
     my $self = shift;
-    my ( $sql, @bv ) = $self->query(@_);
-
-    # TODO these locals have no effect?
-    local $self->{RaiseError}         = 1;
-    local $self->{PrintError}         = 0;
-    local $self->{ShowErrorStatement} = 1;
-
-    return $self->do($sql) unless @bv;
-
-    my $sth = eval {
-        my $sth = $self->prepare($sql);
-        my $i   = 1;
-        foreach my $bv (@bv) {
-            $sth->bind_param( $i++, $bv->for_bind_param );
-        }
-
-        $sth;
-    };
-
-    $self->throw_error($@) if $@;
-
+    my $sth  = $self->xprepare(@_);
     return $sth->execute;
 }
 
@@ -1020,6 +1010,10 @@ original use case was to turn database error text into blessed objects.
 =item xprepare
 
 Does a prepare but knows about bind values and quoted values.
+
+=item xprepare_cached
+
+Does a prepare_cached but knows about bind values and quoted values.
 
 =item xval
 
