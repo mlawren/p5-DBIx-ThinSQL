@@ -1,20 +1,8 @@
 0.0.47_1 (yyyy-mm-dd)
 
-    API / Behaviour Changes:
-        - None.
-
     New Features:
         - New xprepare_cached() method that maps to the underlying
           DBI prepare_cached one.
-
-    Enhancements:
-        - None.
-
-    Bug Fixes:
-        - None.
-
-    Dependencies:
-        - None.
 
 0.0.46 (2016-10-16)
 
