@@ -1,4 +1,4 @@
-0.0.48 (yyyy-mm-dd)
+0.0.48 (2016-11-01)
 
     New Features:
         - New xprepare_cached() method that maps to the underlying
