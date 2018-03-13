@@ -218,7 +218,8 @@ sub deploy_arrayref {
 
         if ( exists $cmd->{sql} ) {
             $log->debug("-- change #$count\n");
-            $self->do( $cmd->{sql} );
+            eval { $self->do( $cmd->{sql} ); };
+            die $cmd->{sql} . $@ if $@;
             $self->do( "
 UPDATE 
     _deploy
