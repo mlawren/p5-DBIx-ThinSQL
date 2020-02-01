@@ -15,6 +15,9 @@
     Dependencies:
         - None.
 
+    Packaging:
+        - Automatically generate README file using githook-perltidy
+
 0.0.48 (2016-11-01)
 
     New Features:
