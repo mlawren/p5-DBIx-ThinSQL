@@ -5,7 +5,7 @@ use Log::Any qw/$log/;
 use Carp qw/croak carp confess/;
 use Path::Tiny;
 
-our $VERSION = '0.0.49_1';
+our $VERSION = '0.0.49_2';
 
 sub _split_sql {
     my $input = shift;
@@ -135,7 +135,7 @@ sub run_file {
 
 sub run_dir {
     my $self = shift;
-    my $dir = path(shift) || confess 'deploy_dir($dir)';
+    my $dir  = path(shift) || confess 'deploy_dir($dir)';
 
     confess "directory not found: $dir" unless -d $dir;
     $log->debug("run_dir($dir)");
@@ -168,7 +168,7 @@ sub _setup_deploy {
 
 sub last_deploy_id {
     my $self = shift;
-    my $app = shift || 'default';
+    my $app  = shift || 'default';
 
     my $sth = $self->table_info( '%', '%', '_deploy' );
     return 0 unless ( @{ $sth->fetchall_arrayref } );
