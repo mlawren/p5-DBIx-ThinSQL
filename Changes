@@ -7,7 +7,8 @@
         - None.
 
     Enhancements:
-        - None.
+        - Use Text::Table::Tiny for xdump() output if it is installed
+        - Support VALUES (1,2),(3,4) syntax in WITH statements
 
     Bug Fixes:
         - None.
