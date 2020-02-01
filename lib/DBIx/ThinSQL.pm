@@ -414,7 +414,7 @@ sub txn {
 
     }
 
-    $self->{RaiseError} = 1 unless exists $self->{HandleError};
+    $self->{RaiseError}         = 1 unless exists $self->{HandleError};
     $self->{ShowErrorStatement} = 1;
 
     my @result;
@@ -492,13 +492,13 @@ our @ISA = qw(DBI::st);
 
 sub val {
     my $self = shift;
-    my $ref = $self->fetchrow_arrayref || return;
+    my $ref  = $self->fetchrow_arrayref || return;
     return $ref->[0];
 }
 
 sub vals {
     my $self = shift;
-    my $all = $self->fetchall_arrayref || return;
+    my $all  = $self->fetchall_arrayref || return;
     return unless @$all;
     return map { $_->[0] } @$all if wantarray;
     return [ map { $_->[0] } @$all ];
@@ -506,7 +506,7 @@ sub vals {
 
 sub list {
     my $self = shift;
-    my $ref = $self->fetchrow_arrayref || return;
+    my $ref  = $self->fetchrow_arrayref || return;
     return @$ref;
 }
 
@@ -811,7 +811,7 @@ sub new {
                                         : DBIx::ThinSQL::bind_value->new(
                                             $arg->{$_}
                                         )
-                                      )
+                                    )
                                 } @cols
                             )
                         ]
