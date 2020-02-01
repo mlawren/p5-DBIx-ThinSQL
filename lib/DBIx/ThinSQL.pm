@@ -313,7 +313,19 @@ sub xdump {
     my $self = shift;
     my $sth  = $self->xprepare(@_);
     $sth->execute;
-    $sth->dump_results;
+    my $header = $sth->{NAME};
+    my $data   = $sth->fetchall_arrayref;
+    unshift @$data, $header;
+    if ( eval { require Text::Table::Tiny } ) {
+        print Text::Table::Tiny::generate_table(
+            header_row => 1,
+            rows       => $data
+          ),
+          "\n";
+    }
+    else {
+        $sth->dump_results;
+    }
 }
 
 sub xval {
