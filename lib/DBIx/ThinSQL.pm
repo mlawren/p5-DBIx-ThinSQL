@@ -565,8 +565,8 @@ our @ISA = ('DBIx::ThinSQL::expr');
 
 sub new {
     my $class = shift;
-    return $_[0]  if ref( $_[0] ) =~ m/DBIx::ThinSQL/;
-    return $$_[0] if ref $_[0] eq 'SCALAR';
+    return $_[0]      if ref( $_[0] ) =~ m/DBIx::ThinSQL/;
+    return ${ $_[0] } if ref $_[0] eq 'SCALAR';
     return bless [@_], $class;
 }
 
@@ -790,7 +790,17 @@ sub new {
                         @query,
                         [
                             $word,
-                            DBIx::ThinSQL::values->new(
+                            ref $arg->[0] eq 'ARRAY'
+                            ? DBIx::ThinSQL::list->new(
+                                map {
+                                    DBIx::ThinSQL::values->new(
+                                        map {
+                                            DBIx::ThinSQL::bind_value->new($_)
+                                        } @$_
+                                    )
+                                } @$arg
+                              )
+                            : DBIx::ThinSQL::values->new(
                                 map { DBIx::ThinSQL::bind_value->new($_) }
                                   @$arg
                             )
