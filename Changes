@@ -1,20 +1,8 @@
-0.0.49_1 (yyyy-mm-dd)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
+0.0.49_1 (2020-02-01)
 
     Enhancements:
         - Use Text::Table::Tiny for xdump() output if it is installed
         - Support VALUES (1,2),(3,4) syntax in WITH statements
-
-    Bug Fixes:
-        - None.
-
-    Dependencies:
-        - None.
 
     Packaging:
         - Automatically generate README file using githook-perltidy
