@@ -5,7 +5,7 @@ use Log::Any qw/$log/;
 use Carp qw/croak carp confess/;
 use Path::Tiny;
 
-our $VERSION = '0.0.45_2';
+our $VERSION = '0.0.49_1';
 
 sub _split_sql {
     my $input = shift;
@@ -218,7 +218,8 @@ sub deploy_arrayref {
 
         if ( exists $cmd->{sql} ) {
             $log->debug("-- change #$count\n");
-            $self->do( $cmd->{sql} );
+            eval { $self->do( $cmd->{sql} ); };
+            die $cmd->{sql} . $@ if $@;
             $self->do( "
 UPDATE 
     _deploy

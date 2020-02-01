@@ -27,7 +27,7 @@ use Exporter::Tidy
   ];
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.45_2';
+our $VERSION = '0.0.49_1';
 
 sub ejoin {
     my $joiner = shift;
@@ -240,16 +240,20 @@ sub xprepare {
     local $self->{ShowErrorStatement} = 1;
 
     my $prepare_ok;
-    my $sth = eval {
-        my $sth = $self->prepare($sql);
+    my $sth;
+    my $prepare =
+      exists $self->{'_dbix_thinsql_prepare_cached'}
+      ? 'prepare_cached'
+      : 'prepare';
+
+    eval {
+        $sth        = $self->$prepare($sql);
         $prepare_ok = 1;
 
         my $i = 1;
         foreach my $bv (@bv) {
             $sth->bind_param( $i++, $bv->for_bind_param );
         }
-
-        $sth;
     };
 
     if ($@) {
@@ -260,29 +264,15 @@ sub xprepare {
     return $sth;
 }
 
+sub xprepare_cached {
+    my $self = shift;
+    local $self->{'_dbix_thinsql_prepare_cached'} = 1;
+    return $self->xprepare(@_);
+}
+
 sub xdo {
     my $self = shift;
-    my ( $sql, @bv ) = $self->query(@_);
-
-    # TODO these locals have no effect?
-    local $self->{RaiseError}         = 1;
-    local $self->{PrintError}         = 0;
-    local $self->{ShowErrorStatement} = 1;
-
-    return $self->do($sql) unless @bv;
-
-    my $sth = eval {
-        my $sth = $self->prepare($sql);
-        my $i   = 1;
-        foreach my $bv (@bv) {
-            $sth->bind_param( $i++, $bv->for_bind_param );
-        }
-
-        $sth;
-    };
-
-    $self->throw_error($@) if $@;
-
+    my $sth  = $self->xprepare(@_);
     return $sth->execute;
 }
 
@@ -323,7 +313,19 @@ sub xdump {
     my $self = shift;
     my $sth  = $self->xprepare(@_);
     $sth->execute;
-    $sth->dump_results;
+    my $header = $sth->{NAME};
+    my $data   = $sth->fetchall_arrayref;
+    unshift @$data, $header;
+    if ( eval { require Text::Table::Tiny } ) {
+        print Text::Table::Tiny::generate_table(
+            header_row => 1,
+            rows       => $data
+          ),
+          "\n";
+    }
+    else {
+        $sth->dump_results;
+    }
 }
 
 sub xval {
@@ -424,7 +426,7 @@ sub txn {
 
     }
 
-    $self->{RaiseError} = 1 unless exists $self->{HandleError};
+    $self->{RaiseError}         = 1 unless exists $self->{HandleError};
     $self->{ShowErrorStatement} = 1;
 
     my @result;
@@ -502,13 +504,13 @@ our @ISA = qw(DBI::st);
 
 sub val {
     my $self = shift;
-    my $ref = $self->fetchrow_arrayref || return;
+    my $ref  = $self->fetchrow_arrayref || return;
     return $ref->[0];
 }
 
 sub vals {
     my $self = shift;
-    my $all = $self->fetchall_arrayref || return;
+    my $all  = $self->fetchall_arrayref || return;
     return unless @$all;
     return map { $_->[0] } @$all if wantarray;
     return [ map { $_->[0] } @$all ];
@@ -516,7 +518,7 @@ sub vals {
 
 sub list {
     my $self = shift;
-    my $ref = $self->fetchrow_arrayref || return;
+    my $ref  = $self->fetchrow_arrayref || return;
     return @$ref;
 }
 
@@ -563,8 +565,8 @@ our @ISA = ('DBIx::ThinSQL::expr');
 
 sub new {
     my $class = shift;
-    return $_[0]  if ref( $_[0] ) =~ m/DBIx::ThinSQL/;
-    return $$_[0] if ref $_[0] eq 'SCALAR';
+    return $_[0]      if ref( $_[0] ) =~ m/DBIx::ThinSQL/;
+    return ${ $_[0] } if ref $_[0] eq 'SCALAR';
     return bless [@_], $class;
 }
 
@@ -788,7 +790,17 @@ sub new {
                         @query,
                         [
                             $word,
-                            DBIx::ThinSQL::values->new(
+                            ref $arg->[0] eq 'ARRAY'
+                            ? DBIx::ThinSQL::list->new(
+                                map {
+                                    DBIx::ThinSQL::values->new(
+                                        map {
+                                            DBIx::ThinSQL::bind_value->new($_)
+                                        } @$_
+                                    )
+                                } @$arg
+                              )
+                            : DBIx::ThinSQL::values->new(
                                 map { DBIx::ThinSQL::bind_value->new($_) }
                                   @$arg
                             )
@@ -821,7 +833,7 @@ sub new {
                                         : DBIx::ThinSQL::bind_value->new(
                                             $arg->{$_}
                                         )
-                                      )
+                                    )
                                 } @cols
                             )
                         ]
@@ -886,7 +898,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.45_2 (2016-07-29) development release.
+0.0.49_1 (2020-02-01) development release.
 
 =head1 SYNOPSIS
 
@@ -1020,6 +1032,10 @@ original use case was to turn database error text into blessed objects.
 =item xprepare
 
 Does a prepare but knows about bind values and quoted values.
+
+=item xprepare_cached
+
+Does a prepare_cached but knows about bind values and quoted values.
 
 =item xval
 

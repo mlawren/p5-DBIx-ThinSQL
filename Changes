@@ -1,3 +1,23 @@
+0.0.49_1 (2020-02-01)
+
+    Enhancements:
+        - Use Text::Table::Tiny for xdump() output if it is installed
+        - Support VALUES (1,2),(3,4) syntax in WITH statements
+
+    Packaging:
+        - Automatically generate README file using githook-perltidy
+        - Migrate from Module::Install to ExtUtils::MakeMaker
+
+0.0.48 (2016-11-01)
+
+    New Features:
+        - New xprepare_cached() method that maps to the underlying
+          DBI prepare_cached one.
+
+0.0.46 (2016-10-16)
+
+    No changes from v0.0.45_2.
+
 0.0.45_2 (2016-07-29)
 
     Bug Fixes:
