@@ -11,7 +11,7 @@ on runtime => sub {
     requires 'warnings';
     requires 'DBI'            => 0;
     requires 'Exporter::Tidy' => 0;
-    requires 'File::ShareDir' => 0;
+    requires 'File::ShareDir' => '1.116';
     requires 'Log::Any'       => 0;
     requires 'Path::Tiny'     => 0;
 

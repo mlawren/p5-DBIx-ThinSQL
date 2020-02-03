@@ -2,7 +2,7 @@ NAME
     DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 VERSION
-    0.0.49_1 (2020-02-01) development release.
+    0.0.49_2 (2020-02-03) development release.
 
 SYNOPSIS
         use strict;
@@ -322,7 +322,7 @@ AUTHOR
     Mark Lawrence <nomad@null.net>
 
 COPYRIGHT AND LICENSE
-    Copyright (C) 2013 Mark Lawrence <nomad@null.net>
+    Copyright (C) 2013-2020 Mark Lawrence <nomad@null.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

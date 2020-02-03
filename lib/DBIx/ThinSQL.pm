@@ -27,7 +27,7 @@ use Exporter::Tidy
   ];
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.49_1';
+our $VERSION = '0.0.49_2';
 
 sub ejoin {
     my $joiner = shift;
@@ -104,12 +104,8 @@ our @ISA = qw(DBI::db);
 our @CARP_NOT;
 
 sub share_dir {
-    require Path::Tiny;
-
-    return Path::Tiny::path($DBIX::ThinSQL::SHARE_DIR)
-      if defined $DBIX::ThinSQL::SHARE_DIR;
-
     require File::ShareDir;
+    require Path::Tiny;
     return Path::Tiny::path( File::ShareDir::dist_dir('DBIx-ThinSQL') );
 }
 
@@ -898,7 +894,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.49_1 (2020-02-01) development release.
+0.0.49_2 (2020-02-03) development release.
 
 =head1 SYNOPSIS
 
@@ -1283,7 +1279,7 @@ Mark Lawrence E<lt>nomad@null.netE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2013 Mark Lawrence <nomad@null.net>
+Copyright (C) 2013-2020 Mark Lawrence <nomad@null.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

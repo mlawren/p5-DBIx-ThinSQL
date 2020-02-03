@@ -1,3 +1,12 @@
+0.0.49_2 (2020-02-03)
+
+    Enhancements:
+        - Use %File::ShareDir::DIST_SHARE feature instead of home-grown
+          silliness for tests.
+
+    Dependencies:
+        - File::ShareDir 1.116
+
 0.0.49_1 (2020-02-01)
 
     Enhancements:
