@@ -1,23 +1,11 @@
-0.0.49_2 (yyyy-mm-dd)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
+0.0.49_2 (2020-02-03)
 
     Enhancements:
         - Use %File::ShareDir::DIST_SHARE feature instead of home-grown
           silliness for tests.
 
-    Bug Fixes:
-        - None.
-
     Dependencies:
         - File::ShareDir 1.116
-
-    Packaging:
-        - None.
 
 0.0.49_1 (2020-02-01)
 
