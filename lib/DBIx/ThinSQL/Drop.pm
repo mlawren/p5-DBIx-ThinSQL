@@ -4,7 +4,7 @@ use warnings;
 use Path::Tiny;
 use DBIx::ThinSQL::Deploy;
 
-our $VERSION = '0.0.49_2';
+our $VERSION = '0.0.49_3';
 
 sub _doit {
     my $self   = shift;
@@ -72,7 +72,7 @@ DBIx::ThinSQL::Drop - Clean database support for DBIx::ThinSQL
 
 =head1 VERSION
 
-0.0.49_2 (2020-02-03) development release.
+0.0.49_3 (yyyy-mm-dd) development release.
 
 =head1 SYNOPSIS
 

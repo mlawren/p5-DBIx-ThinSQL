@@ -27,7 +27,7 @@ use Exporter::Tidy
   ];
 
 our @ISA     = 'DBI';
-our $VERSION = '0.0.49_2';
+our $VERSION = '0.0.49_3';
 
 sub ejoin {
     my $joiner = shift;
@@ -894,7 +894,7 @@ DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 =head1 VERSION
 
-0.0.49_2 (2020-02-03) development release.
+0.0.49_3 (yyyy-mm-dd) development release.
 
 =head1 SYNOPSIS
 
