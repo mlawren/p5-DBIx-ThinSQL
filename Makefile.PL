@@ -49,3 +49,5 @@ WriteMakefile(
     },
 );
 
+package MY;
+use File::ShareDir::Install qw(postamble);

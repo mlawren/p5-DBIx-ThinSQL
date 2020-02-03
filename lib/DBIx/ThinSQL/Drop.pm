@@ -1,7 +1,6 @@
 package DBIx::ThinSQL::Drop;
 use strict;
 use warnings;
-use File::ShareDir qw/dist_dir/;
 use Path::Tiny;
 use DBIx::ThinSQL::Deploy;
 

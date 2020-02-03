@@ -7,13 +7,14 @@
         - None.
 
     Enhancements:
-        - None.
+        - Use %File::ShareDir::DIST_SHARE feature instead of home-grown
+          silliness for tests.
 
     Bug Fixes:
         - None.
 
     Dependencies:
-        - None.
+        - File::ShareDir 1.116
 
     Packaging:
         - None.
