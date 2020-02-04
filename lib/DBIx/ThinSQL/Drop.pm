@@ -72,7 +72,7 @@ DBIx::ThinSQL::Drop - Clean database support for DBIx::ThinSQL
 
 =head1 VERSION
 
-0.0.49 (yyyy-mm-dd) development release.
+0.0.49 (2020-02-04) development release.
 
 =head1 SYNOPSIS
 
