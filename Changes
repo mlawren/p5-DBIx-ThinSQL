@@ -10,7 +10,7 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Skip CTE/WITH tests on SQLite younger than 3.8.3.
 
     Dependencies:
         - None.
