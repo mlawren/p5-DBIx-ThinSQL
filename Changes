@@ -1,22 +1,7 @@
-0.0.50_1 (yyyy-mm-dd)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
+0.0.50 (yyyy-mm-dd)
 
     Bug Fixes:
         - Skip CTE/WITH tests on SQLite younger than 3.8.3.
-
-    Dependencies:
-        - None.
-
-    Packaging:
-        - None.
 
 0.0.49 (2020-02-04)
 

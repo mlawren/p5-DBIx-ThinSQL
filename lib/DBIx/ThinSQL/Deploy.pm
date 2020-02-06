@@ -5,7 +5,7 @@ use Log::Any qw/$log/;
 use Carp qw/croak carp confess/;
 use Path::Tiny;
 
-our $VERSION = '0.0.50_1';
+our $VERSION = '0.0.50';
 
 sub _split_sql {
     my $input = shift;
@@ -358,7 +358,7 @@ DBIx::ThinSQL::Deploy - Deployment support for DBIx::ThinSQL
 
 =head1 VERSION
 
-0.0.50_1 (yyyy-mm-dd) development release.
+0.0.50 (yyyy-mm-dd) development release.
 
 =head1 SYNOPSIS
 
