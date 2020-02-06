@@ -1,4 +1,4 @@
-0.0.50 (yyyy-mm-dd)
+0.0.50 (2020-02-06)
 
     Bug Fixes:
         - Skip CTE/WITH tests on SQLite younger than 3.8.3.

@@ -358,7 +358,7 @@ DBIx::ThinSQL::Deploy - Deployment support for DBIx::ThinSQL
 
 =head1 VERSION
 
-0.0.50 (yyyy-mm-dd) development release.
+0.0.50 (2020-02-06) development release.
 
 =head1 SYNOPSIS
 
