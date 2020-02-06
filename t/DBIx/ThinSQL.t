@@ -251,7 +251,11 @@ run_in_tempdir {
     };
 
   SKIP: {
-        skip 'DBD::DBM limitation', 2 if $driver eq 'DBM';
+        skip 'DBD::DBM limitation',             3 if $driver eq 'DBM';
+        skip 'DBD::SQLite without CTE support', 3
+          if $driver eq 'SQLite'
+          and $DBD::SQLite::sqlite_version_number < 3008003;
+
         $res = $db->xarrayrefs(
             with   => 'x(a,b)',
             as     => [ values => [ [ 1, 2 ], [ 3, 4 ], ], ],
