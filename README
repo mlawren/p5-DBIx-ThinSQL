@@ -2,7 +2,7 @@ NAME
     DBIx::ThinSQL - A lightweight SQL helper for DBI
 
 VERSION
-    0.0.49 (2020-02-04) development release.
+    0.0.50 (2020-02-06) development release.
 
 SYNOPSIS
         use strict;
