@@ -212,6 +212,9 @@ sub sql_bv {
     elsif ( $ref eq 'DBIx::ThinSQL::quote_identifier' ) {
         $$sql .= $self->quote_identifier( $val->val );
     }
+    elsif ( $ref eq 'SCALAR' ) {
+        $$sql .= $$val;
+    }
     else {
         Carp::cluck "sql_bv doesn't know $ref";
     }
