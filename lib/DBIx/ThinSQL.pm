@@ -667,15 +667,23 @@ sub new {
             }
 
             foreach my $col (@cols) {
+                $col =~ s/
+                    (\s+ (?<not>!|not)?\s*(?<like>like) ) |
+                    (?<not>!) |
+                    (?<gtlt>[><]=?)
+                    \s*$ //ixn;
+
+                my ( $not, $like, $gtlt ) = @+{qw(not like gtlt)};
+
+                push( @tokens,
+                    $col =~ m/[^a-zA-Z_.]|^group$/
+                    ? DBIx::ThinSQL::quote_identifier->new($col)
+                    : $col );
+
                 my $val = $narg->{$col};
-
-                my $like     = $col =~ s/\s+like$/ LIKE /i;
-                my $not_like = $col =~ s/\s+(!|not)\s*like$/ NOT LIKE /i;
-                my $not      = $col =~ s/\s*!$//;
-                my $gtlt     = $col =~ s/(\s+[><]=?)$/$1 /;
-
-                push( @tokens, $col );
                 if ( !defined $val ) {
+
+                    # TODO warn if $like
                     push( @tokens, ' IS ', $not ? 'NOT NULL' : 'NULL' );
                 }
                 elsif ( ref $val eq 'ARRAY' ) {
@@ -684,13 +692,14 @@ sub new {
                     pop(@tokens) if @$val;
                     push( @tokens, ')' );
                 }
+                elsif ($like) {
+                    push( @tokens, $not ? ' NOT LIKE ' : ' LIKE ', $val );
+                }
+                elsif ($gtlt) {
+                    push( @tokens, ' ' . $gtlt . ' ', $val );
+                }
                 else {
-                    push( @tokens, $not ? ' != ' : ' = ' )
-                      unless $like
-                      or $not_like
-                      or $gtlt;
-
-                    push( @tokens, $val );
+                    push( @tokens, $not ? ' != ' : ' = ', $val );
                 }
                 push( @tokens, ' AND ' );
             }
