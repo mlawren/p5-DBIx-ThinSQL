@@ -811,27 +811,28 @@ sub new {
                 elsif ( $word =~ m/(^AS$)|(FROM)|(JOIN)/ ) {
                     push( @query, [ $word, DBIx::ThinSQL::query->new(@$arg) ] );
                 }
+                elsif ( $word eq 'VALUES' and 'ARRAY' eq ref $arg->[0] ) {
+                    my @list = map {
+                        DBIx::ThinSQL::values->new(
+                            map {
+                                ref $_ eq 'SCALAR'
+                                  ? $$_
+                                  : DBIx::ThinSQL::bind_value->new($_)
+                            } @$_
+                        )
+                    } @$arg;
+
+                    push( @query, [ $word, DBIx::ThinSQL::list->new(@list) ] );
+                }
                 elsif ( $word eq 'VALUES' ) {
-                    push(
-                        @query,
-                        [
-                            $word,
-                            ref $arg->[0] eq 'ARRAY'
-                            ? DBIx::ThinSQL::list->new(
-                                map {
-                                    DBIx::ThinSQL::values->new(
-                                        map {
-                                            DBIx::ThinSQL::bind_value->new($_)
-                                        } @$_
-                                    )
-                                } @$arg
-                              )
-                            : DBIx::ThinSQL::values->new(
-                                map { DBIx::ThinSQL::bind_value->new($_) }
-                                  @$arg
-                            )
-                        ]
-                    );
+                    my @values = map {
+                        ref $_ eq 'SCALAR'
+                          ? $$_
+                          : DBIx::ThinSQL::bind_value->new($_)
+                    } @$arg;
+
+                    push( @query,
+                        [ $word, DBIx::ThinSQL::values->new(@values) ] );
                 }
                 else {
                     push( @query, [ $word, DBIx::ThinSQL::expr->new(@$arg) ] );
@@ -872,20 +873,15 @@ sub new {
                     $query[-1]->[1] =
                       DBIx::ThinSQL::table->new( $query[-1]->[1], @cols );
 
-                    push(
-                        @query,
-                        [
-                            $word,
-                            DBIx::ThinSQL::values->new(
-                                map {
-                                    ref $arg->{$_} eq 'SCALAR'
-                                      ? ${ $arg->{$_} }
-                                      : DBIx::ThinSQL::bind_value->new(
-                                        $arg->{$_} )
-                                } @cols
-                            )
-                        ]
-                    );
+                    my @vals   = map { $arg->{$_} } @cols;
+                    my @values = map {
+                        ref $_ eq 'SCALAR'
+                          ? $$_
+                          : DBIx::ThinSQL::bind_value->new($_)
+                    } @vals;
+
+                    push( @query,
+                        [ $word, DBIx::ThinSQL::values->new(@values) ] );
                 }
                 else {
                     warn "cannot handle $word => HASH";
