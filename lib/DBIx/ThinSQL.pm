@@ -668,10 +668,12 @@ sub new {
             }
 
             foreach my $col (@cols) {
+                my $val = $narg->{$col};
+
                 $col =~ s/
                     (\s+ (?<not>!|not)?\s*(?<like>like) ) |
-                    (?<not>!) |
-                    (?<gtlt>[><]=?)
+                    (\s*(?<not>!)) |
+                    (\s*(?<gtlt>[><]=?))
                     \s*$ //ixn;
 
                 my ( $not, $like, $gtlt ) = @+{qw(not like gtlt)};
@@ -681,7 +683,6 @@ sub new {
                     ? DBIx::ThinSQL::quote_identifier->new($col)
                     : $col );
 
-                my $val = $narg->{$col};
                 if ( !defined $val ) {
 
                     # TODO warn if $like
