@@ -104,8 +104,12 @@ our @ISA = qw(DBI::db);
 our @CARP_NOT;
 
 sub share_dir {
-    require File::ShareDir;
     require Path::Tiny;
+
+    return Path::Tiny::path($DBIX::ThinSQL::SHARE_DIR)
+      if defined $DBIX::ThinSQL::SHARE_DIR;
+
+    require File::ShareDir;
     return Path::Tiny::path( File::ShareDir::dist_dir('DBIx-ThinSQL') );
 }
 
