@@ -165,7 +165,8 @@ sub sql_bv {
     elsif ( $ref eq 'DBIx::ThinSQL::table' ) {
         my @tokens = $val->tokens;
         my $table  = shift @tokens;
-        $$sql .= $table . "(\n";
+        $self->sql_bv( $sql, $bv, $table, $prefix2 );
+        $$sql .= "(\n";
 
         my $last = pop @tokens;
         foreach my $token (@tokens) {
@@ -768,6 +769,16 @@ sub tokens {
 package DBIx::ThinSQL::table;
 our @ISA = ('DBIx::ThinSQL::list');
 
+sub new {
+    my $class  = shift;
+    my @tokens = map {
+        $_ =~ m/([^a-zA-Z_]|^group$)/
+          ? DBIx::ThinSQL::quote_identifier->new($_)
+          : $_
+    } @_;
+    return bless \@tokens, $class;
+}
+
 package DBIx::ThinSQL::values;
 our @ISA = ('DBIx::ThinSQL::list');
 
@@ -789,6 +800,8 @@ sub new {
             }
             elsif ( $ref eq 'ARRAY' ) {
                 if ( $word =~ m/((SELECT)|(ORDER)|(GROUP))/ ) {
+
+                    # TODO quote_identifier?
                     push( @query, [ $word, DBIx::ThinSQL::list->new(@$arg) ] );
                 }
                 elsif ( $word =~ m/INSERT/ ) {
