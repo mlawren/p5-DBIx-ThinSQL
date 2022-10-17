@@ -671,10 +671,13 @@ sub new {
                 my $val = $narg->{$col};
 
                 $col =~ s/
-                    (\s+ (?<not>!|not)?\s*(?<like>like) ) |
-                    (\s*(?<not>!)) |
-                    (\s*(?<gtlt>[><]=?))
-                    \s*$ //ixn;
+                    (?<name>.*?)
+                    (
+                        (\s+(?<not>!|not)?\s*(?<like>like)) |
+                        (\s*(?<not>!)) |
+                        (\s*(?<gtlt>[><]=?))
+                    )?
+                    \s*$ /$+{name}/ixn;
 
                 my ( $not, $like, $gtlt ) = @+{qw(not like gtlt)};
 
