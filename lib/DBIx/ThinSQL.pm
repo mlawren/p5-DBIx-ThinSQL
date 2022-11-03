@@ -115,7 +115,7 @@ sub share_dir {
 
 sub throw_error {
     my $self = shift;
-    Carp::croak(@_);
+    Carp::croak( '(' . $DBD::SQLite::sqlite_version . ") @_" );
 }
 
 sub sql_bv {
